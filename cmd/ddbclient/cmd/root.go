@@ -5,7 +5,7 @@ package cmd
 
 import (
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
-	"github.com/AgentGuo/ddb/pkg/ddbclient/parser"
+	"github.com/AgentGuo/ddb/pkg/ddbclient/front"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -27,7 +27,7 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				panic(err)
 			}
-			parser.RunParser(clientConfig)
+			front.RunParser(clientConfig)
 		},
 	}
 	configPath string

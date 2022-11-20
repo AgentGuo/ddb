@@ -31,15 +31,6 @@ func Connect() *clientv3.Client {
 		// handle error!
 		fmt.Errorf("error connect etcd %v", err)
 	}
-	// kv := clientv3.NewKV(client)
-	// ctx := context.TODO()
-	// _, errr := kv.Put(ctx, "site/l", "test")
-	// if errr != nil {
-	// 	fmt.Print("error")
-	// }
-	// response, errr := kv.Get(ctx, "site/l")
-	// fmt.Printf("response.Kvs: %v\n", string(response.Kvs[0].Value))
-
 	return client
 }
 

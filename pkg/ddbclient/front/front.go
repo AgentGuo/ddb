@@ -59,14 +59,12 @@ func frontfunc(input string) {
 	} else {
 		ppt := plangenerator.Plangenerate(ast)
 		// opt := optimizer.Optimize(ppt)
-		fmt.Printf("ppt.Root.Lchild.Lchild.Lchild.ScanOper.TableName: %v\n", ppt.Root.Lchild.Lchild.Lchild.ScanOper.TableName)
-		fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
-		fmt.Println()
-		fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
-		fmt.Println()
-		fmt.Printf("ppt.Root.Lchild: %v\n", ppt.Root.Lchild)
-		fmt.Println()
+		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
+		// fmt.Println()
+		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
+		// fmt.Println()
+		// fmt.Printf("ppt.Root.Lchild: %v\n", ppt.Root.Lchild)
+		// fmt.Println()
 		fmt.Printf("ppt.Root: %v\n", ppt.Root)
-		fmt.Println()
 	}
 }

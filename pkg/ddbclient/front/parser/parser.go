@@ -2,7 +2,7 @@ package parser
 
 import (
 	// "github.com/jiunx/xsqlparser"
-	"encoding/json"
+
 	"fmt"
 	"strconv"
 	"strings"
@@ -68,8 +68,8 @@ func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 		Select,
 		&astSelect,
 	}
-	a, _ := json.Marshal(ast)
-	fmt.Println("\n" + string(a) + "\n")
+	// a, _ := json.Marshal(ast)
+	// fmt.Println("\n" + string(a) + "\n")
 	return ast
 }
 func DDL(input string) Stmt_ {

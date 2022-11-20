@@ -85,8 +85,8 @@ type Operator_ struct {
 	Lchild        *Operator_
 	Rchild        *Operator_
 	Site          string
-	NeedTransfer  bool
-	DestSite      string
+	NeedTransfer  bool   // 算子是否需要传输数据
+	DestSite      string // 数据传输地址
 	OperType      OperatorType_
 	ScanOper      *ScanOper_
 	PredicateOper *PredicateOper_

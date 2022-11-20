@@ -1,7 +1,7 @@
 server_port: 22306
 etcd_port: 2379
 mysql_config:
-  ip: 127.0.0.1
+  ip: 10.77.50.214
   port: 23306
   user: root
   passwd: foobar

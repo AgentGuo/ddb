@@ -1,3 +1,9 @@
+# vscode
+.vscode/
+
+#qfs
+start
+
 # Intellij project files
 *.iml
 *.ipr

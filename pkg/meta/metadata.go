@@ -8,11 +8,10 @@ type SiteMeta_ struct {
 }
 
 type FragmentMeta_ struct {
-	Name          string
-	SiteName      string
-	TableName     string
-	IsVertical    bool //horizontal时为false
-	FragCondition string
+	Name      string
+	SiteName  string
+	TableName string
+	Info      string
 }
 
 // logical meta
@@ -25,8 +24,9 @@ type FieldMeta_ struct {
 
 type RouterMeta_ struct {
 	IsVertical    bool
-	VerticalMap   map[string]string
-	HorizontalMap map[string]string
+	VerticalMap   map[string]string //map[col]sitename
+	HorizontalMap map[string]string //map[condition]sitename
+	//目前认为一个site上不会有一个table的两个fragment
 }
 
 type TableMeta_ struct {

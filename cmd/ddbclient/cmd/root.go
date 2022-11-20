@@ -4,9 +4,10 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"os"
+
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front"
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -27,7 +28,7 @@ to quickly create a Cobra application.`,
 			if err != nil {
 				panic(err)
 			}
-			front.RunParser(clientConfig)
+			front.RunFront(clientConfig)
 		},
 	}
 	configPath string

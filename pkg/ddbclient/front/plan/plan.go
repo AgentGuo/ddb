@@ -84,15 +84,15 @@ type Operator_ struct {
 	Parent        *Operator_
 	Lchild        *Operator_
 	Rchild        *Operator_
-	Site          int64
+	Site          string
 	NeedTransfer  bool
-	DestSite      int64
+	DestSite      string
 	OperType      OperatorType_
-	ScanOper      ScanOper_
-	PredicateOper PredicateOper_
-	JoinOper      JoinOper_
-	UnionOper     UnionOper_
-	ProjectOper   ProjectOper_
+	ScanOper      *ScanOper_
+	PredicateOper *PredicateOper_
+	JoinOper      *JoinOper_
+	UnionOper     *UnionOper_
+	ProjectOper   *ProjectOper_
 	// InsertOper    InsertOper_
 	// DeleteOper    DeleteOper_
 }

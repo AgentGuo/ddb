@@ -74,7 +74,7 @@ func (q *QueryResult) String() string {
 	}
 	// tuple
 	for i, row := range q.Data {
-		ret += strconv.Itoa(i) + separator
+		ret += strconv.Itoa(i+1) + separator
 		for j, col := range row {
 			if j == len(row)-1 {
 				ret += fmt.Sprint(col) + "\n"

@@ -5,6 +5,7 @@ import (
 	// "github.com/AgentGuo/ddb/pkg/meta"
 
 	"fmt"
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 	"os"
 	"strings"
 	"syscall"
@@ -59,12 +60,19 @@ func frontfunc(input string) {
 	} else {
 		ppt := plangenerator.Plangenerate(ast)
 		// opt := optimizer.Optimize(ppt)
-		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
-		// fmt.Println()
-		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
-		// fmt.Println()
-		// fmt.Printf("ppt.Root.Lchild: %v\n", ppt.Root.Lchild)
-		// fmt.Println()
-		fmt.Printf("ppt.Root: %v\n", ppt.Root)
+		fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
+		fmt.Println()
+		fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
+		fmt.Println()
+		fmt.Printf("ppt.Root.Lchild: %v\n", ppt.Root.Lchild)
+		fmt.Println()
+		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
+		// host是主executor
+		result, err := executor.RemoteExecuteQT(ppt.Root.Site, &ppt)
+		if err != nil {
+			panic(err)
+		} else {
+			fmt.Println(result)
+		}
 	}
 }

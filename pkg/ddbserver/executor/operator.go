@@ -58,9 +58,6 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 	if op.OperType != plan.Union {
 		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
 	}
-	if op.UnionOper == nil {
-		return nil, fmt.Errorf("operator is nil, operator type = %d", op.OperType)
-	}
 
 	resultLeft, err := e.ExecuteFunc(op.Lchild)
 	if err != nil {

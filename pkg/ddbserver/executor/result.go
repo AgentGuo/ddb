@@ -121,5 +121,5 @@ func (c CellString) Type() CellType {
 
 func init() {
 	gob.Register(CellInt(0))
-	gob.Register(CellString(0))
+	gob.Register(CellString(""))
 }

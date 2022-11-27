@@ -58,22 +58,17 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 					unions[0].Rchild = &scans[1]
 					unions[0].Site = scans[1].Site
 
-					scans[0].Parent = &unions[0]
 					scans[0].NeedTransfer = true
 					scans[0].DestSite = scans[1].Site
-
-					scans[1].Parent = &unions[0]
 
 					for i := 1; i < len(table.RouterMeta.HorizontalMap)-1; i += 1 {
 						unions[i].Lchild = &unions[i-1]
 						unions[i].Rchild = &scans[i+1]
 						unions[i].Site = scans[i+1].Site
 
-						unions[i-1].Parent = &unions[i]
 						unions[i-1].NeedTransfer = true
 						unions[i-1].DestSite = scans[i+1].Site
 
-						scans[i+1].Parent = &unions[i]
 					}
 				}
 

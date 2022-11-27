@@ -1,8 +1,8 @@
 create database ddb;
-create site s1(10.77.50.214:23306);
-create site s2(10.77.50.214:33306);
-create site s3(10.77.110.228:23306);
-create site s4(10.77.110.158:23306);
+create site s1(10.77.50.214:22306);
+create site s2(10.77.50.214:32306);
+create site s3(10.77.110.228:22306);
+create site s4(10.77.110.158:22306);
 
 create table Publisher (id int, name char(100), nation char(3));
 
@@ -10,3 +10,5 @@ create fragment Publisher.1(s1,Publisher,hp,id<104000ANDnation=PRC);
 create fragment Publisher.2(s2,Publisher,hp,id<104000ANDnation=USA);
 create fragment Publisher.3(s3,Publisher,hp,id>=104000ANDnation=PRC);
 create fragment Publisher.4(s4,Publisher,hp,id>=104000ANDnation=USA);
+
+select * from Publisher;

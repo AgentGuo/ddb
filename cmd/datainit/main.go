@@ -34,9 +34,21 @@ name CHAR(100),
 nation CHAR(3),
 PRIMARY KEY(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;`
+	dropCustomerSql    = `DROP TABLE IF EXISTS Customer;`
+	createCustomerSql1 = `
+CREATE TABLE IF NOT EXISTS Customer(
+id INT,
+name CHAR(25),
+PRIMARY KEY(id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;`
+
+	createCustomerSql2 = "CREATE TABLE IF NOT EXISTS Customer(id INT,`rank` INT, PRIMARY KEY(id))ENGINE=InnoDB DEFAULT CHARSET=utf8;"
 )
 
-const insertPublisherSql = `INSERT INTO Publisher VALUES(?, ?, ?);`
+const (
+	insertPublisherSql = `INSERT INTO Publisher VALUES(?, ?, ?);`
+	insertCustomerSql  = `INSERT INTO Customer VALUES(?, ?);`
+)
 const (
 	SITE1 int = iota // value --> 0
 	SITE2            // value --> 1
@@ -154,6 +166,28 @@ func site1Init() error {
 		}
 	}
 	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	// customer slice
+	customerRawTuples, err := getTuples(customerPath)
+	if err != nil {
+		return err
+	}
+	customerSlice := []customer{}
+	for _, tuple := range customerRawTuples {
+		id, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("customer id convert failed:%v", id)
+		}
+		rank, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("customer rank convert failed:%v", rank)
+		}
+		customerSlice = append(customerSlice, customer{
+			id:   id,
+			rank: rank,
+			name: tuple[1],
+		})
+	}
+	fmt.Printf("customerSlice.size = %d\n", len(customerSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -167,11 +201,27 @@ func site1Init() error {
 	if err != nil {
 		return err
 	}
+	dropCmTbStmt, err := tx.Prepare(dropCustomerSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropCmTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
 	}
 	_, err = createPbTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createCmTbStmt, err := tx.Prepare(createCustomerSql1)
+	if err != nil {
+		return err
+	}
+	_, err = createCmTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -181,6 +231,16 @@ func site1Init() error {
 	}
 	for _, pb := range publisherSlice {
 		_, err = insertPbStmt.Exec(pb.id, pb.name, pb.nation)
+		if err != nil {
+			return err
+		}
+	}
+	insertCmStmt, err := tx.Prepare(insertCustomerSql)
+	if err != nil {
+		return err
+	}
+	for _, cm := range customerSlice {
+		_, err = insertCmStmt.Exec(cm.id, cm.name)
 		if err != nil {
 			return err
 		}
@@ -227,6 +287,28 @@ func site2Init() error {
 		}
 	}
 	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	// customer slice
+	customerRawTuples, err := getTuples(customerPath)
+	if err != nil {
+		return err
+	}
+	customerSlice := []customer{}
+	for _, tuple := range customerRawTuples {
+		id, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("customer id convert failed:%v", id)
+		}
+		rank, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("customer rank convert failed:%v", rank)
+		}
+		customerSlice = append(customerSlice, customer{
+			id:   id,
+			rank: rank,
+			name: tuple[1],
+		})
+	}
+	fmt.Printf("customerSlice.size = %d\n", len(customerSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -240,11 +322,27 @@ func site2Init() error {
 	if err != nil {
 		return err
 	}
+	dropCmTbStmt, err := tx.Prepare(dropCustomerSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropCmTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
 	}
 	_, err = createPbTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createCmTbStmt, err := tx.Prepare(createCustomerSql2)
+	if err != nil {
+		return err
+	}
+	_, err = createCmTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -254,6 +352,16 @@ func site2Init() error {
 	}
 	for _, pb := range publisherSlice {
 		_, err = insertPbStmt.Exec(pb.id, pb.name, pb.nation)
+		if err != nil {
+			return err
+		}
+	}
+	insertCmStmt, err := tx.Prepare(insertCustomerSql)
+	if err != nil {
+		return err
+	}
+	for _, cm := range customerSlice {
+		_, err = insertCmStmt.Exec(cm.id, cm.rank)
 		if err != nil {
 			return err
 		}

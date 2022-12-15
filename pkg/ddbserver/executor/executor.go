@@ -58,6 +58,12 @@ func (e *Executor) ExecuteFunc(op *plan.Operator_) (*QueryResult, error) {
 			return e.ExecuteScan(op)
 		case plan.Union:
 			return e.ExecuteUnion(op)
+		case plan.Predicate:
+			return e.ExecutePredicate(op)
+		case plan.Join:
+			return e.ExecuteJoin(op)
+		case plan.Project:
+			return e.ExecuteProject(op)
 		default:
 			return nil, fmt.Errorf("op = %d not implemented", op.OperType)
 		}

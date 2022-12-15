@@ -14,8 +14,8 @@ import (
 
 func Parse(input string) Stmt_ {
 	stmt, err := sqlparser.Parse(input)
-	// fmt.Printf("stmt.(*sqlparser.Select).SelectExprs: %v\n", stmt.(*sqlparser.Select).SelectExprs[0].(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.Name.String())
-	// fmt.Println(stmt.(*sqlparser.Select).Where.Expr.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).Name.String())
+	// fmt.Printf("stmt.(*sqlparser.Select).SelectExprs: %v\n", stmt.(*sqlparser.Select).SelectExprs[0].(*sqlparser.AliasedExpr).Expr.(*sqlparser.ColName).Qualifier.FieldName.String())
+	// fmt.Println(stmt.(*sqlparser.Select).Where.Expr.(*sqlparser.ComparisonExpr).Right.(*sqlparser.ColName).FieldName.String())
 	// fmt.Println(stmt.(*sqlparser.Select).Where.Expr.(*sqlparser.AndExpr).Left.(*sqlparser.ComparisonExpr).Operator)
 	if err != nil {
 		// fmt.Println("sqlparser error")
@@ -136,7 +136,7 @@ func DDL(input string) Stmt_ {
 
 func genCreateTableStmt(stmt *sqlparser.CreateTable) Stmt_ {
 	// fmt.Printf("stmt.Columns: %v\n", stmt.Columns[0].Type)
-	// fmt.Printf("stmt.DDL: %v\n", stmt.DDL.NewName.Name)
+	// fmt.Printf("stmt.DDL: %v\n", stmt.DDL.NewName.FieldName)
 	meta.TableMeta.Name = stmt.DDL.NewName.Name.String()
 	for i, j := range stmt.Columns {
 		size, _ := strconv.Atoi((j.Type[strings.Index(j.Type, "(")+1 : strings.Index(j.Type, ")")]))

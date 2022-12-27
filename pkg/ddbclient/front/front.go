@@ -5,6 +5,7 @@ import (
 	// "github.com/AgentGuo/ddb/pkg/meta"
 
 	"fmt"
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 	"os"
 	"strings"
 	"syscall"
@@ -74,11 +75,11 @@ func frontfunc(input string) {
 		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
 
 		// host是主executor
-		// result, err := executor.RemoteExecuteQT(ppt.Root.Site, &ppt)
-		// if err != nil {
-		// 	panic(err)
-		// } else {
-		// 	fmt.Println(result)
-		// }
+		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+		if err != nil {
+			panic(err)
+		} else {
+			fmt.Println(result)
+		}
 	}
 }

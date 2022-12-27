@@ -25,10 +25,8 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 	}
 	planT1 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName:  "",
 			Parent:        nil,
-			Lchild:        nil,
-			Rchild:        nil,
+			Childs:        nil,
 			Site:          "10.77.50.214:13306",
 			NeedTransfer:  false,
 			DestSite:      "",
@@ -44,37 +42,34 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 
 	planT2 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
-			},
-			Rchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
 			Site:          "10.77.50.214:13306",
 			NeedTransfer:  false,
@@ -94,24 +89,22 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 
 	planT3 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
-			Rchild:       nil,
 			Site:         "10.77.50.214:13306",
 			NeedTransfer: false,
 			DestSite:     "",
@@ -146,24 +139,22 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 
 	planT4 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
-			Rchild:       nil,
 			Site:         "10.77.50.214:13306",
 			NeedTransfer: false,
 			DestSite:     "",
@@ -198,24 +189,23 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 
 	planT7 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
-			Rchild:        nil,
+
 			Site:          "10.77.50.214:13306",
 			NeedTransfer:  false,
 			DestSite:      "",
@@ -243,7 +233,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"test#1", args{
+		{"test#1 单个scan", args{
 			args: ExecutorQTArgs{
 				QT: planT1,
 			},
@@ -251,7 +241,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#2", args{
+		{"test#2 两个scan再union", args{
 			args: ExecutorQTArgs{
 				QT: planT2,
 			},
@@ -259,7 +249,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#3", args{
+		{"test#3 scan+小于predicate", args{
 			args: ExecutorQTArgs{
 				QT: planT3,
 			},
@@ -267,7 +257,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#4", args{
+		{"test#4 scan+小于等于predicate", args{
 			args: ExecutorQTArgs{
 				QT: planT4,
 			},
@@ -275,7 +265,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#5", args{
+		{"test#5 scan+project", args{
 			args: ExecutorQTArgs{
 				QT: planT7,
 			},
@@ -317,37 +307,34 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 	}
 	planT5 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "127.0.0.1:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Customer"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
-			},
-			Rchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "127.0.0.1:13306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Customer"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "127.0.0.1:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "127.0.0.1:13306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
 			Site:          "127.0.0.1:13306",
 			NeedTransfer:  false,
@@ -388,37 +375,34 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 
 	planT6 := plan.Plantree{
 		Root: &plan.Operator_{
-			TmpTableName: "",
-			Parent:       nil,
-			Lchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:22306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Customer"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
-			},
-			Rchild: &plan.Operator_{
-				TmpTableName:  "",
-				Parent:        nil,
-				Lchild:        nil,
-				Rchild:        nil,
-				Site:          "10.77.50.214:32306",
-				NeedTransfer:  false,
-				DestSite:      "",
-				OperType:      plan.Scan,
-				ScanOper:      &plan.ScanOper_{TableName: "Customer"},
-				PredicateOper: nil,
-				JoinOper:      nil,
-				UnionOper:     nil,
-				ProjectOper:   nil,
+			Parent: nil,
+			Childs: []*plan.Operator_{
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:22306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
+				&plan.Operator_{
+					Parent:        nil,
+					Childs:        nil,
+					Site:          "10.77.50.214:32306",
+					NeedTransfer:  false,
+					DestSite:      "",
+					OperType:      plan.Scan,
+					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					PredicateOper: nil,
+					JoinOper:      nil,
+					UnionOper:     nil,
+					ProjectOper:   nil,
+				},
 			},
 			Site:          "127.0.0.1:13306",
 			NeedTransfer:  false,
@@ -462,7 +446,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"test#1", args{
+		{"test#1 ", args{
 			args: ExecutorQTArgs{
 				QT: planT5,
 			},

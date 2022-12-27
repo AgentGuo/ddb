@@ -62,34 +62,35 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 	}
 
 	// 并发执行子树操作
-	var (
-		wg                      sync.WaitGroup
-		resultLeft, resultRight *QueryResult
-		leftErr, rightErr       error
-	)
-	wg.Add(2)
-	go func() {
-		resultLeft, leftErr = e.ExecuteFunc(op.Lchild)
-		wg.Done()
-	}()
-	go func() {
-		resultRight, rightErr = e.ExecuteFunc(op.Rchild)
-		wg.Done()
-	}()
+	wg := sync.WaitGroup{}
+	resultList := []QueryResult{}
+	errList := []error{}
+	resultLock := sync.Mutex{}
+	for _, child := range op.Childs {
+		wg.Add(1)
+		go func() {
+			result, err := e.ExecuteFunc(child)
+			resultLock.Lock()
+			resultList = append(resultList, *result)
+			errList = append(errList, err)
+			resultLock.Unlock()
+			wg.Done()
+		}()
+	}
 	wg.Wait()
-	if leftErr != nil {
-		return nil, leftErr
+	for _, err := range errList {
+		if err != nil {
+			return nil, err
+		}
 	}
-	if rightErr != nil {
-		return nil, rightErr
-	}
-	if resultLeft == nil {
-		return resultRight, nil
-	} else if resultRight == nil {
-		return resultLeft, nil
+	if len(resultList) == 0 {
+		return nil, nil
 	} else {
-		resultLeft.Data = append(resultLeft.Data, resultRight.Data...)
-		return resultLeft, nil
+		result := resultList[0]
+		for _, r := range resultList {
+			result.Data = append(result.Data, r.Data...)
+		}
+		return &result, nil
 	}
 }
 
@@ -97,10 +98,10 @@ func (e *Executor) ExecutePredicate(op *plan.Operator_) (*QueryResult, error) {
 	if op.OperType != plan.Predicate {
 		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
 	}
-	if op.Lchild == nil {
+	if len(op.Childs) == 0 {
 		return nil, nil
 	}
-	result, err := e.ExecuteFunc(op.Lchild)
+	result, err := e.ExecuteFunc(op.Childs[0])
 	if err != nil {
 		return nil, err
 	}
@@ -159,6 +160,9 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 	if op.JoinOper.JoinConditions == nil {
 		return nil, fmt.Errorf("join condition is nil")
 	}
+	if len(op.Childs) != 2 {
+		return nil, fmt.Errorf("join child is not 2")
+	}
 	// 并发执行子树操作
 	var (
 		wg                      sync.WaitGroup
@@ -167,11 +171,11 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 	)
 	wg.Add(2)
 	go func() {
-		resultLeft, leftErr = e.ExecuteFunc(op.Lchild)
+		resultLeft, leftErr = e.ExecuteFunc(op.Childs[0])
 		wg.Done()
 	}()
 	go func() {
-		resultRight, rightErr = e.ExecuteFunc(op.Rchild)
+		resultRight, rightErr = e.ExecuteFunc(op.Childs[0])
 		wg.Done()
 	}()
 	wg.Wait()
@@ -257,7 +261,10 @@ func (e *Executor) ExecuteProject(op *plan.Operator_) (*QueryResult, error) {
 	if op.OperType != plan.Project {
 		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
 	}
-	result, err := e.ExecuteFunc(op.Lchild)
+	if len(op.Childs) == 0 {
+		return nil, fmt.Errorf("project child is empty")
+	}
+	result, err := e.ExecuteFunc(op.Childs[0])
 	if err != nil {
 		return nil, err
 	}

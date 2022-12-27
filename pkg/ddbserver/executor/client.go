@@ -11,8 +11,8 @@ import (
 )
 
 func RemoteExecuteQT(host string, planT *plan.Plantree) (*QueryResult, error) {
-	reply := &ExecutorQTReply{}
-	err := call(host, ExecutorQT, ExecutorQTArgs{QT: *planT}, reply)
+	reply := &ExecuteQTReply{}
+	err := call(host, ExecuteQT, ExecuteQTArgs{QT: *planT}, reply)
 	if err != nil {
 		return nil, err
 	}

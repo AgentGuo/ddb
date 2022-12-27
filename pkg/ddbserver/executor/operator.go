@@ -12,7 +12,15 @@ import (
 	"sync"
 )
 
-const ScanSqlStr = "SELECT * FROM %s;"
+const (
+	ScanSqlStr  = "SELECT * FROM %s;"
+	CreateTbStr = `
+CREATE TABLE IF NOT EXISTS %s(%s
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;`
+	InsertSqlStr      = `INSERT INTO %s (%s) VALUES (%s);`
+	DeleteSqlStr      = `DELETE FROM %s;`
+	SelectCountSqlStr = `SELECT COUNT(1) FROM %s;`
+)
 
 func (e *Executor) ExecuteScan(op *plan.Operator_) (*QueryResult, error) {
 	if op.OperType != plan.Scan {
@@ -301,4 +309,135 @@ func (e *Executor) ExecuteProject(op *plan.Operator_) (*QueryResult, error) {
 		}
 		return projectResult, nil
 	}
+}
+
+func (e *Executor) ExecuteCreateFrag(op *plan.Operator_) (*QueryResult, error) {
+	if op.OperType != plan.CreateFrag {
+		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
+	}
+	if op.CreateFragOper == nil {
+		return nil, fmt.Errorf("create frag operation is nil")
+	}
+	tx, err := e.Db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	filedStr := ""
+	for i, f := range op.CreateFragOper.Fields {
+		if f.Type == "CHAR" {
+			filedStr += fmt.Sprintf("%s %s(%d)", f.FieldName, f.Type, f.Size)
+		} else {
+			filedStr += fmt.Sprintf("%s %s", f.FieldName, f.Type)
+		}
+		if i != len(op.CreateFragOper.Fields)-1 {
+			filedStr += ", "
+		}
+	}
+	createPbTbStmt, err := tx.Prepare(fmt.Sprintf(CreateTbStr, op.CreateFragOper.TableName, filedStr))
+	if err != nil {
+		return nil, err
+	}
+	_, err = createPbTbStmt.Exec()
+	if err != nil {
+		return nil, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (e *Executor) ExecuteInsert(op *plan.Operator_) (*QueryResult, error) {
+	if op.OperType != plan.Insert {
+		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
+	}
+	if op.InsertOper == nil {
+		return nil, fmt.Errorf("insert operation is nil")
+	}
+	fieldStr, valueStr := "", ""
+	for i, f := range op.InsertOper.Fields {
+		fieldStr += f
+		if i != len(op.InsertOper.Fields)-1 {
+			fieldStr += ","
+		}
+	}
+	for i, v := range op.InsertOper.Values {
+		valueStr += fmt.Sprintf("'%s'", string(v))
+		if i != len(op.InsertOper.Values)-1 {
+			valueStr += ","
+		}
+	}
+	tx, err := e.Db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	insertStmt, err := tx.Prepare(fmt.Sprintf(InsertSqlStr, op.InsertOper.TableName, fieldStr, valueStr))
+	if err != nil {
+		return nil, err
+	}
+	_, err = insertStmt.Exec()
+	if err != nil {
+		return nil, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (e *Executor) ExecuteDelete(op *plan.Operator_) (*QueryResult, error) {
+	if op.OperType != plan.Delete {
+		return nil, fmt.Errorf("invalid operator type, get type = %d", op.OperType)
+	}
+	if op.DeleteOper == nil {
+		return nil, fmt.Errorf("delete operation is nil")
+	}
+	tx, err := e.Db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	deleteStmt, err := tx.Prepare(fmt.Sprintf(DeleteSqlStr, op.DeleteOper.TableName))
+	if err != nil {
+		return nil, err
+	}
+	_, err = deleteStmt.Exec()
+	if err != nil {
+		return nil, err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+}
+
+func (e *Executor) ExecuteSelectCount(table string) (int, error) {
+	tx, err := e.Db.Begin()
+	if err != nil {
+		return 0, err
+	}
+	rows, err := tx.Query(fmt.Sprintf(SelectCountSqlStr, table))
+	if err != nil {
+		return 0, err
+	}
+	dataRow := []int{0}
+	pointer := make([]interface{}, 1)
+	for i, _ := range dataRow {
+		pointer[i] = &dataRow[i]
+	}
+	for rows.Next() {
+		err = rows.Scan(pointer...)
+		if err != nil {
+			return 0, err
+		} else {
+			break
+		}
+	}
+	err = tx.Commit()
+	if err != nil {
+		return 0, err
+	}
+	return dataRow[0], nil
 }

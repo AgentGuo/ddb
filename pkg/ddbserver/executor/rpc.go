@@ -12,19 +12,28 @@ import (
 
 const (
 	ExecutorSvc = "ExecutorService"
-	ExecutorQT  = "ExecutorQT"
+	ExecuteQT   = "ExecuteQT"
 )
 
-type ExecutorQTArgs struct {
+type ExecuteQTArgs struct {
 	QT plan.Plantree
 }
 
-type ExecutorQTReply struct {
+type ExecuteQTReply struct {
 	QueryResult *QueryResult
 }
 
+type GetDataNumArgs struct {
+	Table string
+}
+
+type GetDataNumReply struct {
+	DataNum int
+}
+
 type ExecutorService interface {
-	ExecutorQT(args ExecutorQTArgs, reply *ExecutorQTReply) error
+	ExecuteQT(args ExecuteQTArgs, reply *ExecuteQTReply) error
+	GetDataNum(args GetDataNumArgs, reply *GetDataNumReply) error
 }
 
 func RegisterService(service ExecutorService) error {

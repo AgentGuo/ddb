@@ -39,34 +39,40 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 				if table.RouterMeta.IsVertical {
 					for i := range table.Frags {
 						need := false
-						for j := range ast.SelectStmt.Fields {
-							if ast.SelectStmt.Fields[j].TableName == table.Name {
-								for k := range table.Frags[i].Cols {
-									if ast.SelectStmt.Fields[j].FieldName == table.Frags[i].Cols[k] {
-										need = true
+						//假设只有单表才会用*
+						if ast.SelectStmt.Fields[0].FieldName != "*" {
+							for j := range ast.SelectStmt.Fields {
+								if ast.SelectStmt.Fields[j].TableName == table.Name {
+									for k := range table.Frags[i].Cols {
+										if ast.SelectStmt.Fields[j].FieldName == table.Frags[i].Cols[k] {
+											need = true
+										}
 									}
 								}
 							}
-						}
-						for j := range ast.SelectStmt.ConditionUnits {
-							if ast.SelectStmt.ConditionUnits[j].Lexpression.IsField && ast.SelectStmt.ConditionUnits[j].Lexpression.Field.TableName == table.Name {
-								for k := range table.Frags[i].Cols {
-									if ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName == table.Frags[i].Cols[k] {
-										need = true
+							for j := range ast.SelectStmt.ConditionUnits {
+								if ast.SelectStmt.ConditionUnits[j].Lexpression.IsField && ast.SelectStmt.ConditionUnits[j].Lexpression.Field.TableName == table.Name {
+									for k := range table.Frags[i].Cols {
+										if ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName == table.Frags[i].Cols[k] {
+											need = true
+										}
 									}
-								}
-							} else if ast.SelectStmt.ConditionUnits[j].Rexpression.IsField && ast.SelectStmt.ConditionUnits[j].Rexpression.Field.TableName == table.Name {
-								for k := range table.Frags[i].Cols {
-									if ast.SelectStmt.ConditionUnits[j].Rexpression.Field.FieldName == table.Frags[i].Cols[k] {
-										need = true
+								} else if ast.SelectStmt.ConditionUnits[j].Rexpression.IsField && ast.SelectStmt.ConditionUnits[j].Rexpression.Field.TableName == table.Name {
+									for k := range table.Frags[i].Cols {
+										if ast.SelectStmt.ConditionUnits[j].Rexpression.Field.FieldName == table.Frags[i].Cols[k] {
+											need = true
+										}
 									}
 								}
 							}
+						} else {
+							need = true
 						}
 						if need {
 							join_group := []plan.Operator_{}
 							temp := plan.Operator_{}
 							temp.OperType = plan.Scan
+							temp.Site = sitemap[table.Frags[i].SiteName]
 							temp.ScanOper = &plan.ScanOper_{TableName: table.Name, Frag: table.Frags[i]}
 							join_group = append(join_group, temp)
 							join_groups = append(join_groups, join_group)
@@ -77,6 +83,7 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 					for i := range table.Frags {
 						temp := plan.Operator_{}
 						temp.OperType = plan.Scan
+						temp.Site = sitemap[table.Frags[i].SiteName]
 						temp.ScanOper = &plan.ScanOper_{TableName: table.Name, Frag: table.Frags[i]}
 						join_group = append(join_group, temp)
 					}
@@ -88,26 +95,30 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 			// project.Parent = tree.Root
 			project.OperType = plan.Project
 			project.ProjectOper = &plan.ProjectOper_{}
-			project.ProjectOper.Fields = append(project.ProjectOper.Fields, ast.SelectStmt.Fields...)
-
-			tree.Root = &project
-
 			predicate := plan.Operator_{}
+
 			// predicate.Parent = &project
 			predicate.OperType = plan.Predicate
 			predicate.PredicateOper = &plan.PredicateOper_{}
 			predicate.PredicateOper.PredConditions = append(predicate.PredicateOper.PredConditions, ast.SelectStmt.ConditionUnits...)
+			if ast.SelectStmt.Fields[0].FieldName != "*" {
+				project.ProjectOper.Fields = append(project.ProjectOper.Fields, ast.SelectStmt.Fields...)
 
-			project.Childs = append(project.Childs, &predicate)
-
-			// union := plan.Operator_{}
-			// union.OperType = plan.Union
-			// union.Parent = &predicate
-
+				tree.Root = &project
+				project.Childs = append(project.Childs, &predicate)
+			} else {
+				tree.Root = &predicate
+			}
 			genJoin(&join_groups, &predicate, ast.SelectStmt)
-			// tree = *genJoin(&join_groups, &tree, 0)
-			// a, _ := json.MarshalIndent(join_groups, "", "  ")
-			// fmt.Println("\n" + string(a) + "\n")
+
+			if len(ast.SelectStmt.ConditionUnits) == 0 {
+				if tree.Root.OperType == plan.Project {
+					tree.Root.Childs[0] = predicate.Childs[0]
+				} else if tree.Root.OperType == plan.Predicate {
+					tree.Root = predicate.Childs[0]
+				}
+			}
+
 			return tree
 		}
 	case parser.CreateFrag:

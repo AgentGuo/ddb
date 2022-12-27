@@ -11,7 +11,39 @@ create fragment Publisher.2(s2,Publisher,hp,id<104000 AND nation='USA');
 create fragment Publisher.3(s3,Publisher,hp,id>=104000 AND nation='PRC');
 create fragment Publisher.4(s4,Publisher,hp,id>=104000 AND nation='USA');
 
+
+create table Book (id int key, title char(100), authors char(200), publisher_id int, copies int);
+
+create fragment Book.1(s1,Book,hp,id < 205000);
+create fragment Book.2(s2,Book,hp,id >= 205000 AND id < 210000);
+create fragment Book.3(s3,Book,hp,id >= 210000);
+
+
+
+create table Customer (id int key, name char (25), rank int);
+create fragment Customer.1(s1,Customer,vp,id, name);
+create fragment Customer.2(s2,Customer,vp,id, rank);
+
+
+
+create table Orders (customer_id int, book_id int, quantity int); 
+create fragment Orders.1(s1,Orders,hp,customer_id < 307000 and book_id < 215000);
+create fragment Orders.2(s2,Orders,hp,customer_id < 307000 and book_id >= 215000);
+create fragment Orders.3(s3,Orders,hp,customer_id >= 307000 and book_id < 215000);
+create fragment Orders.4(s4,Orders,hp,customer_id >= 307000 and book_id >= 215000);
+
 select * from Publisher;
 
-//create fragment Publisher.10(s1,Publisher,vp,id,nation);
-create fragment Publisher.1(s1,Publisher,hp,id<104000 AND nation=PRC);
+
+Q1~6
+select Publisher.name from Publisher;
+
+select * from Customer;
+
+select Book.title from Book where copies>7000;
+
+select customer_id, Book_id from Orders;
+
+select Book.title,Book.copies,Publisher.name,Publisher.nation from Book,Publisher where Book.publisher_id = Publisher.id and Publisher.nation = 'PRC' and Book.copies>1000;
+
+select Customer.name, Book.title,  Publisher.name, Orders.quantity from Customer,Book,Publisher,Orders where Customer.id=Orders.customer_id and Book.id=Orders.book_id and Book.publisher_id=Publisher.id and Book.id>210000 and Publisher.nation='PRC' and Orders.customer_id >= 307000 and Orders.book_id < 215000;

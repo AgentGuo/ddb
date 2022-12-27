@@ -37,13 +37,19 @@ select * from Publisher;
 
 Q1~6
 select Publisher.name from Publisher;
+ans: 5000
 
 select * from Customer;
+ans: 15000
 
 select Book.title from Book where copies>7000;
+ans:14937
 
 select customer_id, Book_id from Orders;
+ans: 100000
 
 select Book.title,Book.copies,Publisher.name,Publisher.nation from Book,Publisher where Book.publisher_id = Publisher.id and Publisher.nation = 'PRC' and Book.copies>1000;
+ans: 23034
 
 select Customer.name, Book.title,  Publisher.name, Orders.quantity from Customer,Book,Publisher,Orders where Customer.id=Orders.customer_id and Book.id=Orders.book_id and Book.publisher_id=Publisher.id and Book.id>210000 and Publisher.nation='PRC' and Orders.customer_id >= 307000 and Orders.book_id < 215000;
+ans: 2730

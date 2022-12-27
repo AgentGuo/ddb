@@ -8,6 +8,7 @@ package executor
 import (
 	"fmt"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/plan"
+	"log"
 	"strconv"
 	"sync"
 )
@@ -61,6 +62,7 @@ func (e *Executor) ExecuteScan(op *plan.Operator_) (*QueryResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Printf("ExecuteScan: result row num = %d\n", len(result.Data))
 	return result, nil
 }
 
@@ -101,6 +103,7 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 			}
 			result.Data = append(result.Data, r.Data...)
 		}
+		log.Printf("ExecuteUnion: result row num = %d\n", len(result.Data))
 		return &result, nil
 	}
 }
@@ -160,6 +163,7 @@ func (e *Executor) ExecutePredicate(op *plan.Operator_) (*QueryResult, error) {
 				}
 			}
 		}
+		log.Printf("ExecutePredicate: result row num = %d\n", len(filterResult.Data))
 		return filterResult, nil
 	}
 }
@@ -186,7 +190,7 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 		wg.Done()
 	}()
 	go func() {
-		resultRight, rightErr = e.ExecuteFunc(op.Childs[0])
+		resultRight, rightErr = e.ExecuteFunc(op.Childs[1])
 		wg.Done()
 	}()
 	wg.Wait()
@@ -219,37 +223,93 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 			result.Field = append(result.Field, f)
 		}
 		// 进行join
-		for _, leftCell := range resultLeft.Data {
-			for _, rightCell := range resultRight.Data {
-				isPass := false
+		hashJoinFlag := true
+		for _, condition := range conditions {
+			if condition.CompOp != plan.Eq {
+				hashJoinFlag = false
+			}
+		}
+		if hashJoinFlag { // 只包含eq，使用hash join
+			hashTb := map[string][]int{}
+			for i, leftCell := range resultLeft.Data {
+				key := ""
 				for _, condition := range conditions {
 					leftVal, err := resultLeft.getValueByField(condition.Lexpression.Field, leftCell)
 					if err != nil {
-						return nil, err
+						leftVal, err = resultLeft.getValueByField(condition.Rexpression.Field, leftCell)
+						if err != nil {
+							return nil, err
+						}
 					}
+					key += leftVal.String()
+				}
+				if _, ok := hashTb[key]; ok {
+					hashTb[key] = append(hashTb[key], i)
+				} else {
+					hashTb[key] = []int{i}
+				}
+			}
+			for _, rightCell := range resultRight.Data {
+				key := ""
+				for _, condition := range conditions {
 					rightVal, err := resultRight.getValueByField(condition.Rexpression.Field, rightCell)
 					if err != nil {
+						rightVal, err = resultRight.getValueByField(condition.Lexpression.Field, rightCell)
+						if err != nil {
+							return nil, err
+						}
 						return nil, err
 					}
-					if !Compare(leftVal, rightVal, condition.CompOp) {
-						isPass = true
-						break
+					key += rightVal.String()
+				}
+				if idxList, ok := hashTb[key]; ok {
+					joinCell := []Cell{}
+					for _, idx := range idxList {
+						for _, c := range resultLeft.Data[idx] {
+							joinCell = append(joinCell, c)
+						}
+						for _, c := range rightCell {
+							joinCell = append(joinCell, c)
+						}
+						result.Data = append(result.Data, joinCell)
 					}
 				}
-				if isPass {
-					continue
-				}
-				joinCell := []Cell{}
-				for _, c := range leftCell {
-					joinCell = append(joinCell, c)
-				}
-				for _, c := range rightCell {
-					joinCell = append(joinCell, c)
-				}
-				result.Data = append(result.Data, joinCell)
 			}
+			return result, nil
+		} else { // 包含其他运算符，使用loop join
+			for _, leftCell := range resultLeft.Data {
+				for _, rightCell := range resultRight.Data {
+					isPass := false
+					for _, condition := range conditions {
+						leftVal, err := resultLeft.getValueByField(condition.Lexpression.Field, leftCell)
+						if err != nil {
+							return nil, err
+						}
+						rightVal, err := resultRight.getValueByField(condition.Rexpression.Field, rightCell)
+						if err != nil {
+							return nil, err
+						}
+						if !Compare(leftVal, rightVal, condition.CompOp) {
+							isPass = true
+							break
+						}
+					}
+					if isPass {
+						continue
+					}
+					joinCell := []Cell{}
+					for _, c := range leftCell {
+						joinCell = append(joinCell, c)
+					}
+					for _, c := range rightCell {
+						joinCell = append(joinCell, c)
+					}
+					result.Data = append(result.Data, joinCell)
+				}
+			}
+			log.Printf("ExecuteJoin: result row num = %d\n", len(result.Data))
+			return result, nil
 		}
-		return result, nil
 	}
 }
 
@@ -295,6 +355,7 @@ func (e *Executor) ExecuteProject(op *plan.Operator_) (*QueryResult, error) {
 			}
 			projectResult.Data = append(projectResult.Data, tmp)
 		}
+		log.Printf("ExecuteProject: result row num = %d\n", len(projectResult.Data))
 		return projectResult, nil
 	}
 }

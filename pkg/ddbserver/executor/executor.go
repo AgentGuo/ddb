@@ -36,7 +36,7 @@ func (e *Executor) ExecuteQT(args ExecuteQTArgs, reply *ExecuteQTReply) error {
 	}
 	(*reply).QueryResult = result
 	if (*reply).QueryResult != nil {
-		log.Printf("ExecuteQT: result row num = %d", len((*reply).QueryResult.Data))
+		log.Printf("ExecuteQT: result row num = %d\n", len((*reply).QueryResult.Data))
 	}
 	return nil
 }

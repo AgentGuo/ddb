@@ -148,7 +148,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					ScanOper:      &plan.ScanOper_{TableName: "Book"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -167,16 +167,16 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 							IsField: true,
 							Field: plan.Field_{
 								TableName: "",
-								FieldName: "name",
+								FieldName: "copies",
 							},
 							Value: "",
 						},
 						Rexpression: plan.Expression_{
 							IsField: false,
 							Field:   plan.Field_{},
-							Value:   "Publisher #100009",
+							Value:   "7000",
 						},
-						CompOp: plan.Le,
+						CompOp: plan.Gt,
 					},
 				},
 			},
@@ -257,7 +257,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#4 scan+小于等于predicate", args{
+		{"test#4 scan+大于predicate", args{
 			args: ExecuteQTArgs{
 				QT: planT4,
 			},

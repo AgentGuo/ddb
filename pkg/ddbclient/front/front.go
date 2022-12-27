@@ -9,6 +9,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
+
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
@@ -94,11 +96,11 @@ func frontfunc(input string) {
 		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
 
 		// host是主executor
-		// result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
-		// if err != nil {
-		// 	panic(err)
-		// } else {
-		// 	fmt.Println(result)
-		// }
+		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+		if err != nil {
+			panic(err)
+		} else {
+			fmt.Println(result)
+		}
 	}
 }

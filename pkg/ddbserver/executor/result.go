@@ -58,7 +58,7 @@ func (q *QueryResult) getValueByField(field plan.Field_, row []Cell) (Cell, erro
 			return row[i], nil
 		}
 	}
-	return nil, fmt.Errorf("no match field")
+	return nil, fmt.Errorf("no match field, get filed:%v, result filed:%v", field, q.Field)
 }
 
 func NewQueryResult(columnTypes []*sql.ColumnType, tableName string) (*QueryResult, error) {
@@ -138,6 +138,17 @@ func (c CellString) Type() CellType {
 
 func Compare(cell1 Cell, cell2 Cell, comp plan.CompareType_) bool {
 	var compResult int = 0
+	if cell1.Type() == CellIntType && cell2.Type() == CellStringType {
+		intVal, err := strconv.Atoi(cell2.String())
+		if err == nil {
+			cell2 = CellInt(intVal)
+		}
+	} else if cell2.Type() == CellIntType && cell1.Type() == CellStringType {
+		intVal, err := strconv.Atoi(cell1.String())
+		if err == nil {
+			cell1 = CellInt(intVal)
+		}
+	}
 	if cell1.Type() == CellIntType && cell2.Type() == CellIntType {
 		compResult = int(cell1.(CellInt)) - int(cell2.(CellInt))
 	} else if cell1.Type() == CellStringType && cell2.Type() == CellStringType {

@@ -52,8 +52,13 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 							}
 							for j := range ast.SelectStmt.ConditionUnits {
 								if ast.SelectStmt.ConditionUnits[j].Lexpression.IsField && ast.SelectStmt.ConditionUnits[j].Lexpression.Field.TableName == table.Name {
+
 									for k := range table.Frags[i].Cols {
-										if ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName == table.Frags[i].Cols[k] {
+										//假设第一个是主键，垂直分片按主键分
+										if ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName == table.Frags[i].Cols[k] && table.Frags[i].Cols[k] != table.FieldMetas[0].Name {
+											// fmt.Println("here")
+											// fmt.Printf("ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName: %v\n", ast.SelectStmt.ConditionUnits[j].Lexpression.Field.FieldName)
+											// fmt.Printf("table.Frags[i].Cols[k]: %v\n", table.Frags[i].Cols[k])
 											need = true
 										}
 									}
@@ -289,20 +294,20 @@ func getDepth(root *plan.Operator_) int {
 
 func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *plan.Operator_, join *plan.Operator_) {
 	join.JoinOper = &plan.JoinOper_{}
-	for _, j := range ast.ConditionUnits {
-		if j.Lexpression.IsField && j.Rexpression.IsField {
-			if left.ScanOper.Frag.IsVertical && right.ScanOper.Frag.IsVertical {
-				//默认第一个键是主键
-				//这样太慢了
-				client := meta.Connect()
-				data := meta.ReadLogi(client, meta.DefaultDbName, left.ScanOper.TableName, meta.TableMetaType)
-				var table meta.TableMeta_
-				json.Unmarshal(data, &table)
-				client.Close()
-				Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: left.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
-				Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: right.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
-				join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: plan.Eq})
-			} else {
+	if left.ScanOper.Frag.IsVertical && right.ScanOper.Frag.IsVertical {
+		//默认第一个键是主键
+		//这样太慢了
+		client := meta.Connect()
+		data := meta.ReadLogi(client, meta.DefaultDbName, left.ScanOper.TableName, meta.TableMetaType)
+		var table meta.TableMeta_
+		json.Unmarshal(data, &table)
+		client.Close()
+		Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: left.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
+		Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: right.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
+		join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: plan.Eq})
+	} else {
+		for _, j := range ast.ConditionUnits {
+			if j.Lexpression.IsField && j.Rexpression.IsField {
 				if j.Lexpression.Field.TableName == left.ScanOper.TableName && j.Rexpression.Field.TableName == right.ScanOper.TableName {
 					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Lexpression.Field.TableName, FieldName: j.Lexpression.Field.FieldName}}
 					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Rexpression.Field.TableName, FieldName: j.Rexpression.Field.FieldName}}
@@ -316,7 +321,6 @@ func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *
 					join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: j.CompOp})
 
 				}
-
 			}
 		}
 	}

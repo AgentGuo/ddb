@@ -64,9 +64,10 @@ func frontfunc(input string) {
 		// fmt.Printf("ast: %v\n", ast)
 		ppt := plangenerator.Plangenerate(ast)
 		// fmt.Printf("ppt: %v\n", ppt)
+		ShowTree(&ppt)
 
 		opt := optimizer.Optimize(ppt)
-		ShowTree(&opt)
+		// ShowTree(&opt)
 		// fmt.Printf("opt: %v\n", opt)
 		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
 		// fmt.Println()

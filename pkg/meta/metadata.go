@@ -1,5 +1,7 @@
 package meta
 
+import "github.com/AgentGuo/ddb/pkg/ddbclient/front/plan"
+
 // physical meta
 type SiteMeta_ struct {
 	Name string
@@ -33,6 +35,7 @@ type TableMeta_ struct {
 	Name       string
 	FieldMetas []FieldMeta_
 	RouterMeta RouterMeta_
+	Frags      []plan.Frag_
 }
 
 type DbMeta_ struct {

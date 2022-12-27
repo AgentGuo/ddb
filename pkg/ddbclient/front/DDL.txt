@@ -6,9 +6,12 @@ create site s4(10.77.110.158:22306);
 
 create table Publisher (id int, name char(100), nation char(3));
 
-create fragment Publisher.1(s1,Publisher,hp,id<104000ANDnation=PRC);
-create fragment Publisher.2(s2,Publisher,hp,id<104000ANDnation=USA);
-create fragment Publisher.3(s3,Publisher,hp,id>=104000ANDnation=PRC);
-create fragment Publisher.4(s4,Publisher,hp,id>=104000ANDnation=USA);
+create fragment Publisher.1(s1,Publisher,hp,id<104000 AND nation='PRC');
+create fragment Publisher.2(s2,Publisher,hp,id<104000 AND nation='USA');
+create fragment Publisher.3(s3,Publisher,hp,id>=104000 AND nation='PRC');
+create fragment Publisher.4(s4,Publisher,hp,id>=104000 AND nation='USA');
 
 select * from Publisher;
+
+//create fragment Publisher.10(s1,Publisher,vp,id,nation);
+create fragment Publisher.1(s1,Publisher,hp,id<104000 AND nation=PRC);

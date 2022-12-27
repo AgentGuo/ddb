@@ -3,6 +3,7 @@ package optimizer
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/plan"
@@ -17,18 +18,22 @@ func Optimize(ppt plan.Plantree) plan.Plantree {
 }
 
 func predPushDown(ppt *plan.Plantree) {
-	pred := ppt.Root.Childs[0]
-	predCondi := pred.PredicateOper.PredConditions
-	travelTreeInPD(pred.Childs[0], &predCondi)
-
-	if ppt.Root.Childs[0].Childs[0].OperType != plan.Scan {
-		ppt.Root.Childs[0] = pred.Childs[0]
-		// pred.Childs[0].Parent = ppt.Root
-	} else {
-		//理论上不会出现这种情况
-		fmt.Println("this shouldn't be happened in predPushDown")
+	//如果是scan或者union，就没有predicate了，就不下推了
+	if ppt.Root.OperType == plan.Predicate {
+		pred := ppt.Root
+		predCondi := pred.PredicateOper.PredConditions
+		travelTreeInPD(pred, &predCondi)
+		if ppt.Root.Childs[0].OperType != plan.Scan {
+			ppt.Root = ppt.Root.Childs[0]
+		}
+	} else if ppt.Root.Childs[0].OperType == plan.Predicate {
+		pred := ppt.Root.Childs[0]
+		predCondi := pred.PredicateOper.PredConditions
+		travelTreeInPD(pred, &predCondi)
+		if ppt.Root.Childs[0].Childs[0].OperType != plan.Scan {
+			ppt.Root.Childs[0] = ppt.Root.Childs[0].Childs[0]
+		}
 	}
-
 }
 
 // 目前不考虑Join的Union子节点或Scan子节点被剪掉，不考虑Union的所有Scan子节点全部被剪掉
@@ -36,12 +41,11 @@ func predPushDown(ppt *plan.Plantree) {
 func travelTreeInPD(root *plan.Operator_, predcondi *[]plan.ConditionUnit_) {
 	for i := range root.Childs {
 		if root.Childs[i].OperType == plan.Join {
-			travelTreeInPD(root.Childs[i].Childs[0], predcondi)
-			travelTreeInPD(root.Childs[i].Childs[1], predcondi)
+			travelTreeInPD(root.Childs[i], predcondi)
 		} else if root.Childs[i].OperType == plan.Union {
 			unusedChilds := []int{}
+			travelTreeInPD(root.Childs[i], predcondi)
 			for j := range root.Childs[i].Childs {
-				travelTreeInPD(root.Childs[i].Childs[j], predcondi)
 				if root.Childs[i].Childs[j].Unused {
 					unusedChilds = append(unusedChilds, j)
 				}
@@ -116,155 +120,203 @@ func travelTreeInPD(root *plan.Operator_, predcondi *[]plan.ConditionUnit_) {
 }
 
 func predPrune(j *plan.ConditionUnit_, scan *plan.Operator_, Lexpression *plan.Expression_, Rexpression *plan.Expression_) {
+	unnumber := regexp.MustCompile(`[^0-9]`)
+
+	// if len(out) != 0 {
+	// 	fmt.Println("djs")
+	// 	fmt.Printf("out: %v\n", out)
+	// }
+
 	if Lexpression.Field.TableName == scan.ScanOper.TableName {
 		for _, k := range scan.ScanOper.Frag.Condition {
 			//假设分片条件常量在右边
 			if Lexpression.Field.FieldName == k.Lexpression.Field.FieldName {
-				v1, _ := strconv.Atoi(string(Rexpression.Value))
-				v2, _ := strconv.Atoi(string(k.Rexpression.Value))
-				switch j.CompOp {
-				case plan.Lt:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Gt, plan.Ge, plan.Eq:
-							{
-								//目前不考虑double
-								if v1 <= v2 {
-									scan.Unused = true
-									break
+				s1 := unnumber.FindAllString(string(Rexpression.Value), -1)
+				s2 := unnumber.FindAllString(string(k.Rexpression.Value), -1)
+				if len(s1) == 0 && len(s2) == 0 {
+					v1, _ := strconv.Atoi(string(Rexpression.Value))
+					v2, _ := strconv.Atoi(string(k.Rexpression.Value))
+					switch j.CompOp {
+					case plan.Lt:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Gt, plan.Ge, plan.Eq:
+								{
+									//目前不考虑double
+									if v1 <= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							}
+						}
+					case plan.Le:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Gt:
+								{
+									//目前不考虑double
+									if v1 <= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+
+							case plan.Ge, plan.Eq:
+								{
+									//目前不考虑double
+									if v1 < v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							}
+						}
+					case plan.Eq:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Gt:
+								{
+									//目前不考虑double
+									if v1 <= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+
+							case plan.Ge:
+								{
+									//目前不考虑double
+									if v1 < v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							case plan.Lt:
+								{
+									//目前不考虑double
+									if v1 >= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							case plan.Le:
+								{
+									//目前不考虑double
+									if v1 > v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							case plan.Eq:
+								{
+									//目前不考虑double
+									if v1 != v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							case plan.Neq:
+								{
+									if v1 == v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							}
+						}
+					case plan.Ge:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Lt:
+								{
+									//目前不考虑double
+									if v1 >= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+
+							case plan.Le, plan.Eq:
+								{
+									//目前不考虑double
+									if v1 > v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							}
+						}
+					case plan.Gt:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Lt, plan.Le, plan.Eq:
+								{
+									//目前不考虑double
+									if v1 >= v2 {
+										scan.Unused = true
+										break
+									}
+								}
+							}
+						}
+					case plan.Neq:
+						{
+							switch k.CompOp {
+							//目前不考虑double
+							case plan.Eq:
+								{
+									//目前不考虑double
+									if v1 == v2 {
+										scan.Unused = true
+										break
+									}
 								}
 							}
 						}
 					}
-				case plan.Le:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Gt:
-							{
-								//目前不考虑double
-								if v1 <= v2 {
-									scan.Unused = true
-									break
+				} else {
+					switch j.CompOp {
+					case plan.Eq:
+						{
+							switch k.CompOp {
+							case plan.Eq:
+								{
+									if string(Rexpression.Value) != string(k.Rexpression.Value) {
+										scan.Unused = true
+										break
+									}
+								}
+							case plan.Neq:
+								{
+									if string(Rexpression.Value) == string(k.Rexpression.Value) {
+										scan.Unused = true
+										break
+									}
 								}
 							}
 
-						case plan.Ge, plan.Eq:
-							{
-								//目前不考虑double
-								if v1 < v2 {
-									scan.Unused = true
-									break
-								}
-							}
 						}
-					}
-				case plan.Eq:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Gt:
-							{
-								//目前不考虑double
-								if v1 <= v2 {
-									scan.Unused = true
-									break
+					case plan.Neq:
+						{
+							switch k.CompOp {
+							case plan.Eq:
+								{
+									if string(Rexpression.Value) == string(k.Rexpression.Value) {
+										scan.Unused = true
+										break
+									}
 								}
-							}
 
-						case plan.Ge:
-							{
-								//目前不考虑double
-								if v1 < v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						case plan.Lt:
-							{
-								//目前不考虑double
-								if v1 >= v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						case plan.Le:
-							{
-								//目前不考虑double
-								if v1 > v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						case plan.Eq:
-							{
-								//目前不考虑double
-								if v1 != v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						case plan.Neq:
-							{
-								if v1 == v2 {
-									scan.Unused = true
-									break
-								}
 							}
 						}
 					}
-				case plan.Ge:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Lt:
-							{
-								//目前不考虑double
-								if v1 >= v2 {
-									scan.Unused = true
-									break
-								}
-							}
 
-						case plan.Le, plan.Eq:
-							{
-								//目前不考虑double
-								if v1 > v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						}
-					}
-				case plan.Gt:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Lt, plan.Le, plan.Eq:
-							{
-								//目前不考虑double
-								if v1 >= v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						}
-					}
-				case plan.Neq:
-					{
-						switch k.CompOp {
-						//目前不考虑double
-						case plan.Eq:
-							{
-								//目前不考虑double
-								if v1 == v2 {
-									scan.Unused = true
-									break
-								}
-							}
-						}
-					}
 				}
 			}
 		}
@@ -309,15 +361,24 @@ func travelTreeInTO(root *plan.Operator_) {
 		if root.Childs[1].Site != root.Childs[1].DestSite {
 			root.Childs[1].NeedTransfer = true
 		}
-		root.DestSite = root.Childs[0].Site
+		root.Site = root.Childs[0].Site
 	}
 }
 func projPushDown(ppt *plan.Plantree) {
-	travelTreeInPDProj(ppt.Root.Childs[0], &ppt.Root.ProjectOper.Fields)
-	if ppt.Root.Childs[0].OperType == plan.Union {
-		ppt.Root = ppt.Root.Childs[0]
-		//parent
+	if ppt.Root.OperType == plan.Project {
+		travelTreeInPDProj(ppt.Root.Childs[0], &ppt.Root.ProjectOper.Fields)
+		if ppt.Root.Childs[0].OperType == plan.Union {
+			ppt.Root = ppt.Root.Childs[0]
+		} else if ppt.Root.Childs[0].OperType == plan.Predicate && ppt.Root.Childs[0].Childs[0].OperType == plan.Union {
+			ppt.Root = ppt.Root.Childs[0]
+		}
+	} else {
+		// newProj0 := plan.Operator_{}
+		// newProj0.OperType = plan.Project
+		// newProj0.ProjectOper = &plan.ProjectOper_{}
+		// travelTreeInPDProj(ppt.Root, &newProj0.ProjectOper.Fields)
 	}
+
 }
 
 // 默认Join是单条件的
@@ -426,7 +487,7 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 		}
 
 	} else if root.OperType == plan.Predicate {
-		fmt.Print("")
+		travelTreeInPDProj(root.Childs[0], proj)
 	} else if root.OperType == plan.Union {
 		for id := range root.Childs {
 			newProj0 := plan.Operator_{}

@@ -57,11 +57,11 @@ func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 		switch stmtIn := stmt.SelectExprs[i].(type) {
 		case *sqlparser.AliasedExpr:
 			{
-				astSelect.Fields = append(astSelect.Fields, plan.Field_{stmtIn.Expr.(*sqlparser.ColName).Qualifier.Name.String(), stmtIn.Expr.(*sqlparser.ColName).Name.String()})
+				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: stmtIn.Expr.(*sqlparser.ColName).Qualifier.Name.String(), FieldName: stmtIn.Expr.(*sqlparser.ColName).Name.String()})
 			}
 		case *sqlparser.StarExpr:
 			{
-				astSelect.Fields = append(astSelect.Fields, plan.Field_{"", "*"})
+				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: "", FieldName: "*"})
 			}
 		}
 	}
@@ -69,7 +69,7 @@ func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 		astSelect.Tables = append(astSelect.Tables, stmt.From[i].(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String())
 	}
 
-	fmt.Printf("astSelect.Tables: %v\n", astSelect.Tables)
+	// fmt.Printf("astSelect.Tables: %v\n", astSelect.Tables)
 
 	if stmt.Where != nil {
 		queue := []sqlparser.Expr{}
@@ -141,7 +141,13 @@ func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 				}
 			case *sqlparser.ColName:
 				{
-					condi.Lexpression = plan.Expression_{IsField: true, Field: plan.Field_{s.Qualifier.Name.String(), s.Name.String()}}
+					//假设多表时的条件一定加上表名
+					tableName := s.Qualifier.Name.String()
+					if tableName == "" {
+						tableName = astSelect.Tables[0]
+					}
+
+					condi.Lexpression = plan.Expression_{IsField: true, Field: plan.Field_{TableName: tableName, FieldName: s.Name.String()}}
 				}
 			}
 
@@ -152,7 +158,12 @@ func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 				}
 			case *sqlparser.ColName:
 				{
-					condi.Rexpression = plan.Expression_{IsField: true, Field: plan.Field_{s.Qualifier.Name.String(), s.Name.String()}}
+					//假设多表时的条件一定加上表名
+					tableName := s.Qualifier.Name.String()
+					if tableName == "" {
+						tableName = astSelect.Tables[0]
+					}
+					condi.Rexpression = plan.Expression_{IsField: true, Field: plan.Field_{TableName: tableName, FieldName: s.Name.String()}}
 				}
 			}
 

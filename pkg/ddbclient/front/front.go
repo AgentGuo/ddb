@@ -5,10 +5,11 @@ import (
 	// "github.com/AgentGuo/ddb/pkg/meta"
 
 	"fmt"
-	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 	"os"
 	"strings"
 	"syscall"
+
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
@@ -59,13 +60,14 @@ func frontfunc(input string) {
 	null := parser.Stmt_{}
 	if ast == null {
 		// fmt.Println("DDL")
-	} else {
+	} else if ast.Type == parser.Select {
 		// fmt.Printf("ast: %v\n", ast)
 		ppt := plangenerator.Plangenerate(ast)
 		// fmt.Printf("ppt: %v\n", ppt)
 
 		opt := optimizer.Optimize(ppt)
-		fmt.Printf("opt: %v\n", opt)
+		ShowTree(&opt)
+		// fmt.Printf("opt: %v\n", opt)
 		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
 		// fmt.Println()
 		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)

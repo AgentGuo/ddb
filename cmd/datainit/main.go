@@ -14,6 +14,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 )
 
 const (
@@ -43,11 +45,30 @@ PRIMARY KEY(id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;`
 
 	createCustomerSql2 = "CREATE TABLE IF NOT EXISTS Customer(id INT,`rank` INT, PRIMARY KEY(id))ENGINE=InnoDB DEFAULT CHARSET=utf8;"
+	dropBookSql        = `DROP TABLE IF EXISTS Book;`
+	createBookSql      = `
+CREATE TABLE IF NOT EXISTS Book(
+id INT,
+title CHAR(100),
+authors CHAR(200),
+publisher_id INT,
+copies INT,
+PRIMARY KEY(id)
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;`
+	dropOrdersSql   = `DROP TABLE IF EXISTS Orders;`
+	createOrdersSql = `
+CREATE TABLE IF NOT EXISTS Orders(
+customer_id INT,
+book_id INT,
+quantity INT
+)ENGINE=InnoDB DEFAULT CHARSET=utf8;`
 )
 
 const (
 	insertPublisherSql = `INSERT INTO Publisher VALUES(?, ?, ?);`
 	insertCustomerSql  = `INSERT INTO Customer VALUES(?, ?);`
+	insertBookSql      = `INSERT INTO Book VALUES(?, ?, ?, ?, ?);`
+	insertOrdersSql    = `INSERT INTO Orders VALUES(?, ?, ?);`
 )
 const (
 	SITE1 int = iota // value --> 0
@@ -64,22 +85,41 @@ var dbAddr = []string{
 }
 
 func main() {
-	err := site1Init()
-	if err != nil {
-		panic(err)
-	}
-	err = site2Init()
-	if err != nil {
-		panic(err)
-	}
-	err = site3Init()
-	if err != nil {
-		panic(err)
-	}
-	err = site4Init()
-	if err != nil {
-		panic(err)
-	}
+	var wg sync.WaitGroup
+	go func() {
+		wg.Add(1)
+		err := site1Init()
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		err := site2Init()
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		err := site3Init()
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+	go func() {
+		wg.Add(1)
+		err := site4Init()
+		if err != nil {
+			panic(err)
+		}
+		wg.Done()
+	}()
+	time.Sleep(time.Second)
+	wg.Wait()
 }
 
 // getTuples
@@ -127,8 +167,7 @@ type book struct {
 }
 
 type orders struct {
-	customerId, quantity int
-	bookId               string
+	customerId, quantity, bookId int
 }
 
 func site1Init() error {
@@ -165,7 +204,7 @@ func site1Init() error {
 			publisherSlice = append(publisherSlice, tmp)
 		}
 	}
-	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	fmt.Printf("site1.pulisherSlice.size = %d\n", len(publisherSlice))
 	// customer slice
 	customerRawTuples, err := getTuples(customerPath)
 	if err != nil {
@@ -187,7 +226,64 @@ func site1Init() error {
 			name: tuple[1],
 		})
 	}
-	fmt.Printf("customerSlice.size = %d\n", len(customerSlice))
+	fmt.Printf("site1.customerSlice.size = %d\n", len(customerSlice))
+	// book slice
+	bookRawTuples, err := getTuples(bookPath)
+	if err != nil {
+		return err
+	}
+	bookSlice := []book{}
+	for _, tuple := range bookRawTuples {
+		id, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("book id convert failed:%v", id)
+		}
+		publisherId, err := strconv.Atoi(tuple[3])
+		if err != nil {
+			return fmt.Errorf("book publisher id convert failed:%v", publisherId)
+		}
+		copies, err := strconv.Atoi(tuple[4])
+		if err != nil {
+			return fmt.Errorf("book copies convert failed:%v", copies)
+		}
+		if id < 205000 {
+			bookSlice = append(bookSlice, book{
+				id:          id,
+				publisherId: publisherId,
+				copies:      copies,
+				title:       tuple[1],
+				authors:     tuple[2],
+			})
+		}
+	}
+	fmt.Printf("site1.bookSlice.size = %d\n", len(bookSlice))
+	ordersRawTuples, err := getTuples(ordersPath)
+	if err != nil {
+		return err
+	}
+	ordersSlice := []orders{}
+	for _, tuple := range ordersRawTuples {
+		customerId, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("orders customer id convert failed:%v", customerId)
+		}
+		bookId, err := strconv.Atoi(tuple[1])
+		if err != nil {
+			return fmt.Errorf("orders book id convert failed:%v", bookId)
+		}
+		quantity, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("orders quantity convert failed:%v", quantity)
+		}
+		if customerId < 307000 && bookId < 215000 {
+			ordersSlice = append(ordersSlice, orders{
+				customerId: customerId,
+				quantity:   quantity,
+				bookId:     bookId,
+			})
+		}
+	}
+	fmt.Printf("site1.ordersSlice.size = %d\n", len(ordersSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -209,6 +305,22 @@ func site1Init() error {
 	if err != nil {
 		return err
 	}
+	dropBkTbStmt, err := tx.Prepare(dropBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	dropOdTbStmt, err := tx.Prepare(dropOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropOdTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
@@ -222,6 +334,22 @@ func site1Init() error {
 		return err
 	}
 	_, err = createCmTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createBkTbStmt, err := tx.Prepare(createBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = createBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createOdTbStmt, err := tx.Prepare(createOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = createOdTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -244,6 +372,20 @@ func site1Init() error {
 		if err != nil {
 			return err
 		}
+	}
+	insertBkStmt, err := tx.Prepare(insertBookSql)
+	if err != nil {
+		return err
+	}
+	for _, bk := range bookSlice {
+		_, err = insertBkStmt.Exec(bk.id, bk.title, bk.authors, bk.publisherId, bk.copies)
+	}
+	insertOdStmt, err := tx.Prepare(insertOrdersSql)
+	if err != nil {
+		return err
+	}
+	for _, od := range ordersSlice {
+		_, err = insertOdStmt.Exec(od.customerId, od.bookId, od.quantity)
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -286,7 +428,7 @@ func site2Init() error {
 			publisherSlice = append(publisherSlice, tmp)
 		}
 	}
-	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	fmt.Printf("site2.pulisherSlice.size = %d\n", len(publisherSlice))
 	// customer slice
 	customerRawTuples, err := getTuples(customerPath)
 	if err != nil {
@@ -308,7 +450,64 @@ func site2Init() error {
 			name: tuple[1],
 		})
 	}
-	fmt.Printf("customerSlice.size = %d\n", len(customerSlice))
+	fmt.Printf("site2.customerSlice.size = %d\n", len(customerSlice))
+	// book slice
+	bookRawTuples, err := getTuples(bookPath)
+	if err != nil {
+		return err
+	}
+	bookSlice := []book{}
+	for _, tuple := range bookRawTuples {
+		id, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("book id convert failed:%v", id)
+		}
+		publisherId, err := strconv.Atoi(tuple[3])
+		if err != nil {
+			return fmt.Errorf("book publisher id convert failed:%v", publisherId)
+		}
+		copies, err := strconv.Atoi(tuple[4])
+		if err != nil {
+			return fmt.Errorf("book copies convert failed:%v", copies)
+		}
+		if id >= 205000 && id < 210000 {
+			bookSlice = append(bookSlice, book{
+				id:          id,
+				publisherId: publisherId,
+				copies:      copies,
+				title:       tuple[1],
+				authors:     tuple[2],
+			})
+		}
+	}
+	fmt.Printf("site2.bookSlice.size = %d\n", len(bookSlice))
+	ordersRawTuples, err := getTuples(ordersPath)
+	if err != nil {
+		return err
+	}
+	ordersSlice := []orders{}
+	for _, tuple := range ordersRawTuples {
+		customerId, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("orders customer id convert failed:%v", customerId)
+		}
+		bookId, err := strconv.Atoi(tuple[1])
+		if err != nil {
+			return fmt.Errorf("orders book id convert failed:%v", bookId)
+		}
+		quantity, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("orders quantity convert failed:%v", quantity)
+		}
+		if customerId < 307000 && bookId >= 215000 {
+			ordersSlice = append(ordersSlice, orders{
+				customerId: customerId,
+				quantity:   quantity,
+				bookId:     bookId,
+			})
+		}
+	}
+	fmt.Printf("site2.ordersSlice.size = %d\n", len(ordersSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -330,6 +529,22 @@ func site2Init() error {
 	if err != nil {
 		return err
 	}
+	dropBkTbStmt, err := tx.Prepare(dropBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	dropOdTbStmt, err := tx.Prepare(dropOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropOdTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
@@ -343,6 +558,22 @@ func site2Init() error {
 		return err
 	}
 	_, err = createCmTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createBkTbStmt, err := tx.Prepare(createBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = createBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createOdTbStmt, err := tx.Prepare(createOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = createOdTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -365,6 +596,20 @@ func site2Init() error {
 		if err != nil {
 			return err
 		}
+	}
+	insertBkStmt, err := tx.Prepare(insertBookSql)
+	if err != nil {
+		return err
+	}
+	for _, bk := range bookSlice {
+		_, err = insertBkStmt.Exec(bk.id, bk.title, bk.authors, bk.publisherId, bk.copies)
+	}
+	insertOdStmt, err := tx.Prepare(insertOrdersSql)
+	if err != nil {
+		return err
+	}
+	for _, od := range ordersSlice {
+		_, err = insertOdStmt.Exec(od.customerId, od.bookId, od.quantity)
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -407,7 +652,64 @@ func site3Init() error {
 			publisherSlice = append(publisherSlice, tmp)
 		}
 	}
-	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	fmt.Printf("site3.pulisherSlice.size = %d\n", len(publisherSlice))
+	// book slice
+	bookRawTuples, err := getTuples(bookPath)
+	if err != nil {
+		return err
+	}
+	bookSlice := []book{}
+	for _, tuple := range bookRawTuples {
+		id, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("book id convert failed:%v", id)
+		}
+		publisherId, err := strconv.Atoi(tuple[3])
+		if err != nil {
+			return fmt.Errorf("book publisher id convert failed:%v", publisherId)
+		}
+		copies, err := strconv.Atoi(tuple[4])
+		if err != nil {
+			return fmt.Errorf("book copies convert failed:%v", copies)
+		}
+		if id >= 210000 {
+			bookSlice = append(bookSlice, book{
+				id:          id,
+				publisherId: publisherId,
+				copies:      copies,
+				title:       tuple[1],
+				authors:     tuple[2],
+			})
+		}
+	}
+	fmt.Printf("site3.bookSlice.size = %d\n", len(bookSlice))
+	ordersRawTuples, err := getTuples(ordersPath)
+	if err != nil {
+		return err
+	}
+	ordersSlice := []orders{}
+	for _, tuple := range ordersRawTuples {
+		customerId, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("orders customer id convert failed:%v", customerId)
+		}
+		bookId, err := strconv.Atoi(tuple[1])
+		if err != nil {
+			return fmt.Errorf("orders book id convert failed:%v", bookId)
+		}
+		quantity, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("orders quantity convert failed:%v", quantity)
+		}
+		if customerId >= 307000 && bookId < 215000 {
+			ordersSlice = append(ordersSlice, orders{
+				customerId: customerId,
+				quantity:   quantity,
+				bookId:     bookId,
+			})
+		}
+	}
+	fmt.Printf("site3.ordersSlice.size = %d\n", len(ordersSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -421,11 +723,43 @@ func site3Init() error {
 	if err != nil {
 		return err
 	}
+	dropBkTbStmt, err := tx.Prepare(dropBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	dropOdTbStmt, err := tx.Prepare(dropOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropOdTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
 	}
 	_, err = createPbTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createBkTbStmt, err := tx.Prepare(createBookSql)
+	if err != nil {
+		return err
+	}
+	_, err = createBkTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createOdTbStmt, err := tx.Prepare(createOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = createOdTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -438,6 +772,20 @@ func site3Init() error {
 		if err != nil {
 			return err
 		}
+	}
+	insertBkStmt, err := tx.Prepare(insertBookSql)
+	if err != nil {
+		return err
+	}
+	for _, bk := range bookSlice {
+		_, err = insertBkStmt.Exec(bk.id, bk.title, bk.authors, bk.publisherId, bk.copies)
+	}
+	insertOdStmt, err := tx.Prepare(insertOrdersSql)
+	if err != nil {
+		return err
+	}
+	for _, od := range ordersSlice {
+		_, err = insertOdStmt.Exec(od.customerId, od.bookId, od.quantity)
 	}
 	err = tx.Commit()
 	if err != nil {
@@ -480,7 +828,34 @@ func site4Init() error {
 			publisherSlice = append(publisherSlice, tmp)
 		}
 	}
-	fmt.Printf("pulisherSlice.size = %d\n", len(publisherSlice))
+	fmt.Printf("site4.pulisherSlice.size = %d\n", len(publisherSlice))
+	ordersRawTuples, err := getTuples(ordersPath)
+	if err != nil {
+		return err
+	}
+	ordersSlice := []orders{}
+	for _, tuple := range ordersRawTuples {
+		customerId, err := strconv.Atoi(tuple[0])
+		if err != nil {
+			return fmt.Errorf("orders customer id convert failed:%v", customerId)
+		}
+		bookId, err := strconv.Atoi(tuple[1])
+		if err != nil {
+			return fmt.Errorf("orders book id convert failed:%v", bookId)
+		}
+		quantity, err := strconv.Atoi(tuple[2])
+		if err != nil {
+			return fmt.Errorf("orders quantity convert failed:%v", quantity)
+		}
+		if customerId >= 307000 && bookId >= 215000 {
+			ordersSlice = append(ordersSlice, orders{
+				customerId: customerId,
+				quantity:   quantity,
+				bookId:     bookId,
+			})
+		}
+	}
+	fmt.Printf("site4.ordersSlice.size = %d\n", len(ordersSlice))
 	// sql exec
 	tx, err := db.Begin()
 	if err != nil {
@@ -494,11 +869,27 @@ func site4Init() error {
 	if err != nil {
 		return err
 	}
+	dropOdTbStmt, err := tx.Prepare(dropOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = dropOdTbStmt.Exec()
+	if err != nil {
+		return err
+	}
 	createPbTbStmt, err := tx.Prepare(createPublisherSql)
 	if err != nil {
 		return err
 	}
 	_, err = createPbTbStmt.Exec()
+	if err != nil {
+		return err
+	}
+	createOdTbStmt, err := tx.Prepare(createOrdersSql)
+	if err != nil {
+		return err
+	}
+	_, err = createOdTbStmt.Exec()
 	if err != nil {
 		return err
 	}
@@ -511,6 +902,13 @@ func site4Init() error {
 		if err != nil {
 			return err
 		}
+	}
+	insertOdStmt, err := tx.Prepare(insertOrdersSql)
+	if err != nil {
+		return err
+	}
+	for _, od := range ordersSlice {
+		_, err = insertOdStmt.Exec(od.customerId, od.bookId, od.quantity)
 	}
 	err = tx.Commit()
 	if err != nil {

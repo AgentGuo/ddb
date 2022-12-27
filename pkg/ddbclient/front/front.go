@@ -9,12 +9,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
-
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/plangenerator"
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -68,7 +67,7 @@ func frontfunc(input string) {
 
 		opt := optimizer.Optimize(ppt)
 		// ShowTree(&opt)
-		// fmt.Printf("opt: %v\n", opt)
+		fmt.Printf("opt: %v\n", opt)
 		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
 		// fmt.Println()
 		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)

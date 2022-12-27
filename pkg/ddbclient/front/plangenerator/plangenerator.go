@@ -111,8 +111,14 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 
 				tree.Root = &project
 				project.Childs = append(project.Childs, &predicate)
+			} else if join_groups[0][0].ScanOper.Frag.IsVertical {
+				project.ProjectOper.Fields = append(project.ProjectOper.Fields, ast.SelectStmt.Fields...)
+
+				tree.Root = &project
+				project.Childs = append(project.Childs, &predicate)
 			} else {
 				tree.Root = &predicate
+
 			}
 			genJoin(&join_groups, &predicate, ast.SelectStmt)
 

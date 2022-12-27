@@ -392,6 +392,7 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 			newProj0.OperType = plan.Project
 			newProj0.ProjectOper = &plan.ProjectOper_{}
 			json.Unmarshal(v, &newProj0.ProjectOper.Fields)
+			// fmt.Printf("root.OperType: %v\n", root.OperType)
 			newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Lexpression.Field)
 
 			root.Childs[0] = &newProj0

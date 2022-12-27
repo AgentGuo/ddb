@@ -128,6 +128,7 @@ func (e *Executor) ExecutePredicate(op *plan.Operator_) (*QueryResult, error) {
 			Data:  [][]Cell{},
 		}
 		for _, cell := range result.Data {
+			filterFlag := true
 			for _, condition := range conditions {
 				var leftVal, rightVal Cell
 				if condition.Lexpression.IsField {
@@ -158,9 +159,13 @@ func (e *Executor) ExecutePredicate(op *plan.Operator_) (*QueryResult, error) {
 					}
 				}
 
-				if Compare(leftVal, rightVal, condition.CompOp) {
-					filterResult.Data = append(filterResult.Data, cell)
+				if !Compare(leftVal, rightVal, condition.CompOp) {
+					filterFlag = false
+					break
 				}
+			}
+			if filterFlag {
+				filterResult.Data = append(filterResult.Data, cell)
 			}
 		}
 		log.Printf("ExecutePredicate: result row num = %d\n", len(filterResult.Data))
@@ -263,8 +268,8 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 					key += rightVal.String()
 				}
 				if idxList, ok := hashTb[key]; ok {
-					joinCell := []Cell{}
 					for _, idx := range idxList {
+						joinCell := []Cell{}
 						for _, c := range resultLeft.Data[idx] {
 							joinCell = append(joinCell, c)
 						}
@@ -275,6 +280,7 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 					}
 				}
 			}
+			log.Printf("ExecuteHashJoin: result row num = %d\n", len(result.Data))
 			return result, nil
 		} else { // 包含其他运算符，使用loop join
 			for _, leftCell := range resultLeft.Data {
@@ -307,7 +313,7 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 					result.Data = append(result.Data, joinCell)
 				}
 			}
-			log.Printf("ExecuteJoin: result row num = %d\n", len(result.Data))
+			log.Printf("ExecuteLoopJoin: result row num = %d\n", len(result.Data))
 			return result, nil
 		}
 	}

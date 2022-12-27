@@ -316,7 +316,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					ScanOper:      &plan.ScanOper_{TableName: "Orders"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -329,7 +329,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					ScanOper:      &plan.ScanOper_{TableName: "Book"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -350,15 +350,15 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 						Lexpression: plan.Expression_{
 							IsField: true,
 							Field: plan.Field_{
-								TableName: "Customer",
-								FieldName: "id",
+								TableName: "Orders",
+								FieldName: "book_id",
 							},
 							Value: "",
 						},
 						Rexpression: plan.Expression_{
 							IsField: true,
 							Field: plan.Field_{
-								TableName: "Customer",
+								TableName: "Book",
 								FieldName: "id",
 							},
 							Value: "",

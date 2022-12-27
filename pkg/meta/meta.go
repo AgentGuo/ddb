@@ -35,6 +35,9 @@ func Connect() *clientv3.Client {
 }
 
 func Write(client *clientv3.Client, metatype MetaType) {
+	if DbMeta.Name == "" {
+		DbMeta.Name = DefaultDbName
+	}
 	kv := clientv3.NewKV(client)
 	// ctx, cancel := context.WithTimeout(rootContext, time.Duration(5)*time.Second)
 	ctx := context.TODO()
@@ -58,6 +61,7 @@ func Write(client *clientv3.Client, metatype MetaType) {
 	case TableMetaType:
 		{
 			v, _ := json.Marshal(TableMeta)
+			// fmt.Println("\n" + string(v) + "\n")
 			_, err := kv.Put(ctx, "db/"+DbMeta.Name+"/"+TableMeta.Name+"/meta", string(v))
 			if err != nil {
 				fmt.Println(err)

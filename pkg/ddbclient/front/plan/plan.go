@@ -9,8 +9,11 @@ const (
 	Join
 	Union
 	Project
-	// Insert
-	// Delete
+
+	CreateDb
+	CreateFrag
+	Insert
+	Delete
 )
 
 // Compare operation
@@ -45,9 +48,18 @@ type ConditionUnit_ struct {
 	CompOp      CompareType_
 }
 
+type Frag_ struct {
+	Name       string
+	SiteName   string
+	IsVertical bool
+	Cols       []string
+	Condition  []ConditionUnit_
+}
+
 // Operators
 type ScanOper_ struct {
 	TableName string
+	Frag      Frag_ //仅优化时使用，执行时不使用
 }
 
 type PredicateOper_ struct {
@@ -69,32 +81,50 @@ type ProjectOper_ struct {
 	Fields []Field_
 }
 
-// type InsertOper_ struct {
-// 	Fields []Field_
-// 	Values []Value_
-// }
+type CreateDbOper_ struct {
+	DbName string
+}
 
-// type DeleteOper_ struct {
-// 	TableName        string
-// 	DeleteConditions []ConditionUnit_
-// }
+type FieldWithInfo struct {
+	FieldName string
+	Size      int64
+	Type      string
+}
+
+type CreateFragOper_ struct {
+	TableName string
+	Fields    []FieldWithInfo
+}
+
+type InsertOper_ struct {
+	TableName string
+	Fields    []string
+	Values    []Value_
+}
+
+type DeleteOper_ struct {
+	TableName string
+	// DeleteConditions []ConditionUnit_
+}
 
 type Operator_ struct {
-	TmpTableName  string
-	Parent        *Operator_
-	Lchild        *Operator_
-	Rchild        *Operator_
-	Site          string
-	NeedTransfer  bool   // 算子是否需要传输数据
-	DestSite      string // 数据传输地址
-	OperType      OperatorType_
-	ScanOper      *ScanOper_
-	PredicateOper *PredicateOper_
-	JoinOper      *JoinOper_
-	UnionOper     *UnionOper_
-	ProjectOper   *ProjectOper_
-	// InsertOper    InsertOper_
-	// DeleteOper    DeleteOper_
+	FragName       string
+	Unused         bool
+	Parent         *Operator_
+	Childs         []*Operator_
+	Site           string
+	NeedTransfer   bool   // 算子是否需要传输数据
+	DestSite       string // 数据传输地址
+	OperType       OperatorType_
+	ScanOper       *ScanOper_
+	PredicateOper  *PredicateOper_
+	JoinOper       *JoinOper_
+	UnionOper      *UnionOper_
+	ProjectOper    *ProjectOper_
+	CreateDbOper   *CreateDbOper_
+	CreateFragOper *CreateFragOper_
+	InsertOper     *InsertOper_
+	DeleteOper     *DeleteOper_
 }
 
 type Plantree struct {

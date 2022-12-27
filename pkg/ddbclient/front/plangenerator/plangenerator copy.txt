@@ -83,28 +83,23 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 					join_groups = append(join_groups, join_group)
 				}
 			}
-
 			project := plan.Operator_{}
-			// project.Parent = tree.Root
+			project.Parent = tree.Root
 			project.OperType = plan.Project
-			project.ProjectOper = &plan.ProjectOper_{}
 			project.ProjectOper.Fields = append(project.ProjectOper.Fields, ast.SelectStmt.Fields...)
 
-			tree.Root = &project
-
 			predicate := plan.Operator_{}
-			// predicate.Parent = &project
+			predicate.Parent = &project
 			predicate.OperType = plan.Predicate
-			predicate.PredicateOper = &plan.PredicateOper_{}
 			predicate.PredicateOper.PredConditions = append(predicate.PredicateOper.PredConditions, ast.SelectStmt.ConditionUnits...)
 
 			project.Childs = append(project.Childs, &predicate)
 
-			// union := plan.Operator_{}
-			// union.OperType = plan.Union
-			// union.Parent = &predicate
+			union := plan.Operator_{}
+			union.OperType = plan.Union
+			union.Parent = &predicate
 
-			genJoin(&join_groups, &predicate, ast.SelectStmt)
+			union_temp := []plan.Operator_{}
 			// tree = *genJoin(&join_groups, &tree, 0)
 			// a, _ := json.MarshalIndent(join_groups, "", "  ")
 			// fmt.Println("\n" + string(a) + "\n")
@@ -130,19 +125,23 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 	return plan.Plantree{}
 }
 
-func genJoin(groups *[][]plan.Operator_, root *plan.Operator_, ast *parser.SelectStmt_) {
+func genJoin(groups *[][]plan.Operator_, root *plan.Operator_, cnt int, ast *parser.SelectStmt_, union_temp *plan.Operator_, union *plan.Operator_) *plan.Operator_ {
 	groups_ := *groups
-	for i := range groups_ {
-		if len(groups_[i]) == 1 {
-			genTree(root, &groups_[i][0], ast)
-		} else if len(groups_[i]) > 1 {
-			union := plan.Operator_{}
-			union.OperType = plan.Union
-			for j := range groups_[i] {
-				// groups_[i][j].Parent = &union
-				union.Childs = append(union.Childs, &groups_[i][j])
+	if cnt == 0 {
+		for i := range groups_[0] {
+			genTree(union_temp, &groups_[0][i], ast)
+			genJoin(groups, root, 1, ast, union_temp, union)
+		}
+	} else if cnt == len(groups_) {
+
+	} else {
+		for i := range groups_[cnt] {
+			if i == 0 {
+				genTree(union_temp, &groups_[cnt][i], ast)
+				genJoin(groups, root, cnt+1, ast, union_temp, union)
+			} else if i != 0 {
+
 			}
-			genTree(root, &union, ast)
 		}
 	}
 
@@ -150,103 +149,76 @@ func genJoin(groups *[][]plan.Operator_, root *plan.Operator_, ast *parser.Selec
 
 func genTree(root *plan.Operator_, new *plan.Operator_, ast *parser.SelectStmt_) {
 	if len(root.Childs) == 0 {
-		if root.OperType == plan.Predicate {
+		if root.OperType == plan.Scan {
 			root.Childs = append(root.Childs, new)
-			// new.Parent = root
+			new.Parent = root
 		} else {
 			fmt.Println("error when len of children = 0")
 		}
-	} else if len(root.Childs) == 1 { //自己是Scan或Union或Join,new可能是Scan或Union
+	} else if len(root.Childs) == 1 {
 		if root.Childs[0].OperType == plan.Scan {
-			join := plan.Operator_{}
-			join.OperType = plan.Join
+			if root.OperType != plan.Union {
+				fmt.Println("no-union oper has one child")
+			} else {
+				join := plan.Operator_{}
+				join.OperType = plan.Join
+				join.JoinOper.LtableName = root.Childs[0].ScanOper.TableName
+				join.JoinOper.RtableName = new.ScanOper.TableName
 
-			left := root.Childs[0]
-			right := new
-			if new.OperType == plan.Union {
-				right = new.Childs[0]
+				left := root.Childs[0]
+				right := new
+				genJoinOperCondition(ast, left, right, &join)
+
+				join.Childs = append(join.Childs, root.Childs[0])
+				join.Childs = append(join.Childs, new)
+				root.Childs[0].Parent = &join
+				new.Parent = &join
+
+				root.Childs[0] = &join
+				join.Parent = root
 			}
-			genJoinOperCondition(ast, left, right, &join)
-
-			join.Childs = append(join.Childs, root.Childs[0])
-			join.Childs = append(join.Childs, new)
-			// root.Childs[0].Parent = &join
-			// new.Parent = &join
-
-			root.Childs[0] = &join
-			// join.Parent = root
-		} else if root.Childs[0].OperType == plan.Join {
+		} else if root.OperType == plan.Join {
 			genTree(root.Childs[0], new, ast)
-		} else if root.Childs[0].OperType == plan.Union {
-			join := plan.Operator_{}
-			join.OperType = plan.Join
-
-			left := root.Childs[0]
-			if root.Childs[0].OperType == plan.Union {
-				left = root.Childs[0].Childs[0]
-			}
-			right := new
-			if new.OperType == plan.Union {
-				right = new.Childs[0]
-			}
-			genJoinOperCondition(ast, left, right, &join)
-
-			join.Childs = append(join.Childs, root.Childs[0])
-			join.Childs = append(join.Childs, new)
-			// root.Childs[0].Parent = &join
-			// new.Parent = &join
-
-			root.Childs[0] = &join
-			// join.Parent = root
 		} else {
 			fmt.Println("union has other one-child child")
 		}
 	} else if len(root.Childs) == 2 {
 		if root.OperType == plan.Join {
-			if root.Childs[0].OperType == plan.Scan || root.Childs[0].OperType == plan.Union {
+			if root.Childs[0].OperType == plan.Scan {
 				join := plan.Operator_{}
 				join.OperType = plan.Join
+				join.JoinOper.LtableName = root.Childs[0].ScanOper.TableName
+				join.JoinOper.RtableName = new.ScanOper.TableName
 
 				left := root.Childs[0]
-				if root.Childs[0].OperType == plan.Union {
-					left = root.Childs[0].Childs[0]
-				}
 				right := new
-				if new.OperType == plan.Union {
-					right = new.Childs[0]
-				}
 				genJoinOperCondition(ast, left, right, &join)
 
 				join.Childs = append(join.Childs, root.Childs[0])
 				join.Childs = append(join.Childs, new)
-				// root.Childs[0].Parent = &join
-				// new.Parent = &join
+				root.Childs[0].Parent = &join
+				new.Parent = &join
 
 				root.Childs[0] = &join
-				// join.Parent = root
+				join.Parent = root
 
-			} else if root.Childs[0].OperType == plan.Join && root.Childs[1].OperType == plan.Scan || root.Childs[1].OperType == plan.Union {
+			} else if root.Childs[0].OperType == plan.Join && root.Childs[1].OperType == plan.Scan {
 				join := plan.Operator_{}
 				join.OperType = plan.Join
+				join.JoinOper.LtableName = root.Childs[1].ScanOper.TableName
+				join.JoinOper.RtableName = new.ScanOper.TableName
 
 				left := root.Childs[1]
-				if root.Childs[1].OperType == plan.Union {
-					left = root.Childs[1].Childs[0]
-				}
 				right := new
-				if new.OperType == plan.Union {
-					right = new.Childs[0]
-				}
-
 				genJoinOperCondition(ast, left, right, &join)
 
 				join.Childs = append(join.Childs, root.Childs[1])
 				join.Childs = append(join.Childs, new)
-				// root.Childs[1].Parent = &join
-				// new.Parent = &join
+				root.Childs[1].Parent = &join
+				new.Parent = &join
 
 				root.Childs[1] = &join
-				// join.Parent = root
+				join.Parent = root
 
 			} else if root.Childs[0].OperType == plan.Join && root.Childs[1].OperType == plan.Join {
 				if getDepth(root.Childs[0]) > getDepth(root.Childs[1]) {
@@ -266,7 +238,7 @@ func genTree(root *plan.Operator_, new *plan.Operator_, ast *parser.SelectStmt_)
 }
 
 func getDepth(root *plan.Operator_) int {
-	if root.Childs[1].OperType == plan.Scan || root.Childs[1].OperType == plan.Union {
+	if root.Childs[1].OperType == plan.Scan {
 		return 1
 	} else if root.Childs[1].OperType == plan.Join {
 		return getDepth(root.Childs[1]) + 1
@@ -277,7 +249,6 @@ func getDepth(root *plan.Operator_) int {
 }
 
 func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *plan.Operator_, join *plan.Operator_) {
-	join.JoinOper = &plan.JoinOper_{}
 	for _, j := range ast.ConditionUnits {
 		if j.Lexpression.IsField && j.Rexpression.IsField {
 			if left.ScanOper.Frag.IsVertical && right.ScanOper.Frag.IsVertical {
@@ -288,19 +259,19 @@ func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *
 				var table meta.TableMeta_
 				json.Unmarshal(data, &table)
 				client.Close()
-				Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: left.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
-				Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: right.ScanOper.TableName, FieldName: table.FieldMetas[0].Name}}
+				Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{left.ScanOper.TableName, table.FieldMetas[0].Name}}
+				Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{right.ScanOper.TableName, table.FieldMetas[0].Name}}
 				join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: plan.Eq})
 			} else {
 				if j.Lexpression.Field.TableName == left.ScanOper.TableName && j.Rexpression.Field.TableName == right.ScanOper.TableName {
-					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Lexpression.Field.TableName, FieldName: j.Lexpression.Field.FieldName}}
-					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Rexpression.Field.TableName, FieldName: j.Rexpression.Field.FieldName}}
+					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{j.Lexpression.Field.TableName, j.Lexpression.Field.FieldName}}
+					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{j.Rexpression.Field.TableName, j.Rexpression.Field.FieldName}}
 					//这里的j.CompOp默认是plan.Eq
 					join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: j.CompOp})
 
 				} else if j.Lexpression.Field.TableName == right.ScanOper.TableName && j.Rexpression.Field.TableName == left.ScanOper.TableName {
-					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Rexpression.Field.TableName, FieldName: j.Rexpression.Field.FieldName}}
-					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Lexpression.Field.TableName, FieldName: j.Lexpression.Field.FieldName}}
+					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{j.Rexpression.Field.TableName, j.Rexpression.Field.FieldName}}
+					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{j.Lexpression.Field.TableName, j.Lexpression.Field.FieldName}}
 					//这里的j.CompOp默认是plan.Eq
 					join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: j.CompOp})
 
@@ -310,3 +281,89 @@ func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *
 		}
 	}
 }
+
+// func Plangenerate(ast parser.Stmt_) plan.Plantree {
+// 	tree := plan.Plantree{}
+// 	switch ast.Type {
+// 	case parser.Select:
+// 		{
+// 			sitemap := map[string]string{}
+// 			client := meta.Connect()
+// 			for i := 1; i < 5; i += 1 {
+// 				site_bi := meta.ReadPhys(client, "s"+strconv.Itoa(i), "", meta.SiteMetaType)
+// 				var site meta.SiteMeta_
+// 				json.Unmarshal(site_bi, &site)
+// 				sitemap[site.Name] = site.Ip + ":" + site.Port
+// 			}
+// 			client.Close()
+// 			// fmt.Printf("sitemap: %v\n", sitemap)
+
+// 			for _, t := range ast.SelectStmt.Tables {
+// 				client := meta.Connect()
+// 				data := meta.ReadLogi(client, meta.DefaultDbName, t, meta.TableMetaType)
+// 				var table meta.TableMeta_
+// 				json.Unmarshal(data, &table)
+// 				client.Close()
+// 				// fmt.Printf("table.RouterMeta: %v\n", table.RouterMeta)
+// 				if table.RouterMeta.IsVertical {
+// 					fmt.Println("To do for join")
+// 				} else {
+// 					var unions []plan.Operator_
+// 					for i := 0; i < len(table.RouterMeta.HorizontalMap)-1; i += 1 {
+// 						temp := plan.Operator_{}
+// 						temp.OperType = plan.Union
+// 						unions = append(unions, temp)
+// 					}
+// 					tree.Root = &unions[len(table.RouterMeta.HorizontalMap)-2]
+// 					tree.OperatorNum = -1
+
+// 					var scans []plan.Operator_
+// 					//hp时scan oper不需要关注condition
+// 					for _, j := range table.RouterMeta.HorizontalMap {
+// 						temp := plan.Operator_{}
+// 						temp.Site = sitemap[j]
+// 						temp.OperType = plan.Scan
+// 						temp.ScanOper = &plan.ScanOper_{TableName: table.Name}
+// 						scans = append(scans, temp)
+// 					}
+// 					unions[0].Lchild = &scans[0]
+// 					unions[0].Rchild = &scans[1]
+// 					unions[0].Site = scans[1].Site
+
+// 					scans[0].NeedTransfer = true
+// 					scans[0].DestSite = scans[1].Site
+
+// 					for i := 1; i < len(table.RouterMeta.HorizontalMap)-1; i += 1 {
+// 						unions[i].Lchild = &unions[i-1]
+// 						unions[i].Rchild = &scans[i+1]
+// 						unions[i].Site = scans[i+1].Site
+
+// 						unions[i-1].NeedTransfer = true
+// 						unions[i-1].DestSite = scans[i+1].Site
+
+// 					}
+// 				}
+
+// 			}
+// 			// fmt.Printf("tree.Root: %v\n", tree.Root)
+// 			return tree
+// 		}
+// 	case parser.CreateFrag:
+// 		{
+
+// 		}
+// 	case parser.Insert:
+// 		{
+
+// 		}
+// 	case parser.Delete:
+// 		{
+
+// 		}
+// 	default:
+// 		{
+// 			fmt.Println("To do")
+// 		}
+// 	}
+// 	return plan.Plantree{}
+// }

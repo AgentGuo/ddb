@@ -3,6 +3,8 @@
 
 #qfs
 start
+1.py
+min-max.py
 
 # Intellij project files
 *.iml

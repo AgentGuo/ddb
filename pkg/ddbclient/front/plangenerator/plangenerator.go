@@ -154,6 +154,24 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 
 func genJoin(groups *[][]plan.Operator_, root *plan.Operator_, ast *parser.SelectStmt_) {
 	groups_ := *groups
+
+	outer_num := len(groups_)
+	if outer_num > 1 {
+		temp := []plan.Operator_{}
+		temp = append(temp, groups_[outer_num-1]...)
+		groups_[outer_num-1] = []plan.Operator_{}
+		groups_[outer_num-1] = append(groups_[outer_num-1], groups_[outer_num-2]...)
+		groups_[outer_num-2] = []plan.Operator_{}
+		groups_[outer_num-2] = append(groups_[outer_num-2], temp...)
+	}
+	if outer_num > 2 {
+		temp := []plan.Operator_{}
+		temp = append(temp, groups_[0]...)
+		groups_[0] = []plan.Operator_{}
+		groups_[0] = append(groups_[0], groups_[2]...)
+		groups_[2] = []plan.Operator_{}
+		groups_[2] = append(groups_[2], temp...)
+	}
 	for i := range groups_ {
 		if len(groups_[i]) == 1 {
 			genTree(root, &groups_[i][0], ast)
@@ -315,17 +333,26 @@ func genJoinOperCondition(ast *parser.SelectStmt_, left *plan.Operator_, right *
 		for _, j := range ast.ConditionUnits {
 			if j.Lexpression.IsField && j.Rexpression.IsField {
 				if j.Lexpression.Field.TableName == left.ScanOper.TableName && j.Rexpression.Field.TableName == right.ScanOper.TableName {
+					// fmt.Println("here")
+					// // fmt.Printf("j.Lexpression.Field.TableName: %v\n", j.Lexpression.Field.TableName)
+					// fmt.Printf("left.ScanOper.TableName: %v\n", left.ScanOper.TableName)
+					// // fmt.Printf("j.Rexpression.Field.TableName: %v\n", j.Rexpression.Field.TableName)
+					// fmt.Printf("right.ScanOper.TableName: %v\n", right.ScanOper.TableName)
+
 					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Lexpression.Field.TableName, FieldName: j.Lexpression.Field.FieldName}}
 					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Rexpression.Field.TableName, FieldName: j.Rexpression.Field.FieldName}}
 					//这里的j.CompOp默认是plan.Eq
 					join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: j.CompOp})
 
 				} else if j.Lexpression.Field.TableName == right.ScanOper.TableName && j.Rexpression.Field.TableName == left.ScanOper.TableName {
+
 					Lexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Rexpression.Field.TableName, FieldName: j.Rexpression.Field.FieldName}}
 					Rexpression := plan.Expression_{IsField: true, Field: plan.Field_{TableName: j.Lexpression.Field.TableName, FieldName: j.Lexpression.Field.FieldName}}
 					//这里的j.CompOp默认是plan.Eq
 					join.JoinOper.JoinConditions = append(join.JoinOper.JoinConditions, plan.ConditionUnit_{Lexpression: Lexpression, Rexpression: Rexpression, CompOp: j.CompOp})
 
+				} else {
+					// fmt.Println("gen join error")
 				}
 			}
 		}

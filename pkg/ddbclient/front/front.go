@@ -13,7 +13,6 @@ import (
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/plangenerator"
-	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -68,6 +67,9 @@ func frontfunc(input string) {
 		opt := optimizer.Optimize(ppt)
 		// ShowTree(&opt)
 		fmt.Printf("opt: %v\n", opt)
+		fmt.Printf("opt.Root.OperType: %v\n", opt.Root.OperType)
+		fmt.Printf("opt.Root.Childs[0].OperType: %v\n", opt.Root.Childs[0].OperType)
+		fmt.Printf("opt.Root.Childs[0].Childs[0].OperType: %v\n", opt.Root.Childs[0].Childs[0].OperType)
 		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
 		// fmt.Println()
 		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
@@ -77,11 +79,11 @@ func frontfunc(input string) {
 		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
 
 		// host是主executor
-		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
-		if err != nil {
-			panic(err)
-		} else {
-			fmt.Println(result)
-		}
+		// result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+		// if err != nil {
+		// 	panic(err)
+		// } else {
+		// 	fmt.Println(result)
+		// }
 	}
 }

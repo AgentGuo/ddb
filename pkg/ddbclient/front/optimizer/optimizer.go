@@ -53,6 +53,9 @@ func travelTreeInPD(root *plan.Operator_, predcondi *[]plan.ConditionUnit_) {
 			for id, cnt := range unusedChilds {
 				root.Childs[i].Childs = append(root.Childs[i].Childs[:cnt-id], root.Childs[i].Childs[cnt-id+1:]...)
 			}
+			if len(root.Childs[i].Childs) == 1 {
+				root.Childs[i] = root.Childs[i].Childs[0]
+			}
 		} else if root.Childs[i].OperType == plan.Scan {
 			scan := root.Childs[i]
 			if !scan.ScanOper.Frag.IsVertical {
@@ -386,23 +389,25 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 
 	v, _ := json.Marshal(proj)
 	if root.OperType == plan.Join {
+
 		//left
 		if root.Childs[0].OperType == plan.Join {
 			newProj0 := plan.Operator_{}
 			newProj0.OperType = plan.Project
 			newProj0.ProjectOper = &plan.ProjectOper_{}
 			json.Unmarshal(v, &newProj0.ProjectOper.Fields)
+			// fmt.Printf("root.OperType: %v\n", root.OperType)
 			newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Lexpression.Field)
+
+			// root.Childs[0].Parent = &newProj0
+			newProj0.Childs = append(newProj0.Childs, root.Childs[0])
 
 			root.Childs[0] = &newProj0
 			// newProj0.Parent = root
 
-			// root.Childs[0].Parent = &newProj0
-			newProj0.Childs = append(newProj0.Childs, root.Childs[0])
 			newProj0.Site = newProj0.Childs[0].Site
 
 			travelTreeInPDProj(root.Childs[0].Childs[0], &newProj0.ProjectOper.Fields)
-			// travelTreeInPDProj(root.Childs[1], proj)
 		} else if root.Childs[0].OperType == plan.Union {
 			for id := range root.Childs[0].Childs {
 				newProj0 := plan.Operator_{}
@@ -445,11 +450,12 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 			json.Unmarshal(v, &newProj1.ProjectOper.Fields)
 			newProj1.ProjectOper.Fields = append(newProj1.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Rexpression.Field)
 
+			// root.Childs[1].Parent = &newProj1
+			newProj1.Childs = append(newProj1.Childs, root.Childs[1])
+
 			root.Childs[1] = &newProj1
 			// newProj1.Parent = root
 
-			// root.Childs[1].Parent = &newProj1
-			newProj1.Childs = append(newProj1.Childs, root.Childs[1])
 			newProj1.Site = newProj1.Childs[0].Site
 			travelTreeInPDProj(root.Childs[1].Childs[0], &newProj1.ProjectOper.Fields)
 		} else if root.Childs[1].OperType == plan.Union {
@@ -485,10 +491,12 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 		} else {
 			fmt.Println("error in travelTreeInPDProj")
 		}
-
 	} else if root.OperType == plan.Predicate {
+
 		travelTreeInPDProj(root.Childs[0], proj)
+
 	} else if root.OperType == plan.Union {
+
 		for id := range root.Childs {
 			newProj0 := plan.Operator_{}
 			newProj0.OperType = plan.Project

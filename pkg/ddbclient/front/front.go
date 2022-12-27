@@ -9,8 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
-
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
@@ -67,8 +65,26 @@ func frontfunc(input string) {
 		ShowTree(&ppt)
 
 		opt := optimizer.Optimize(ppt)
-		// ShowTree(&opt)
+		// opt.Root = opt.Root.Childs[0].Childs[0].Childs[0].Childs[0].Childs[0]
+		ShowTree(&opt)
 		// fmt.Printf("opt: %v\n", opt)
+		// fmt.Printf("opt.Root.OperType: %v\n", opt.Root.OperType)
+		// fmt.Printf("opt.Root.Childs[0].OperType: %v\n", opt.Root.Childs[0].OperType)
+		// fmt.Printf("opt.Root.Childs[0].Childs[0].OperType: %v\n", opt.Root.Childs[0].Childs[0].OperType)
+		// fmt.Printf("opt.Root.Childs[0].Childs[0].Childs[0].OperType: %v\n", opt.Root.Childs[0].Childs[0].Childs[0].OperType)
+		// now := opt.Root
+		// cnt := 1
+		// for {
+		// 	fmt.Printf("now.OperType: %v\n", now.OperType)
+		// 	if len(now.Childs) == 0 {
+		// 		break
+		// 	} else {
+		// 		now = now.Childs[0]
+		// 	}
+		// 	fmt.Printf("cnt: %v\n", cnt)
+		// 	cnt += 1
+
+		// }
 		// fmt.Printf("ppt.Root.Lchild.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild.Lchild)
 		// fmt.Println()
 		// fmt.Printf("ppt.Root.Lchild.Lchild: %v\n", ppt.Root.Lchild.Lchild)
@@ -78,11 +94,11 @@ func frontfunc(input string) {
 		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
 
 		// host是主executor
-		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
-		if err != nil {
-			panic(err)
-		} else {
-			fmt.Println(result)
-		}
+		// result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+		// if err != nil {
+		// 	panic(err)
+		// } else {
+		// 	fmt.Println(result)
+		// }
 	}
 }

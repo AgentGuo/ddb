@@ -74,16 +74,16 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 	resultList := []QueryResult{}
 	errList := []error{}
 	resultLock := sync.Mutex{}
-	for _, child := range op.Childs {
+	for i, _ := range op.Childs {
 		wg.Add(1)
-		go func() {
-			result, err := e.ExecuteFunc(child)
+		go func(index int) {
+			result, err := e.ExecuteFunc(op.Childs[index])
 			resultLock.Lock()
 			resultList = append(resultList, *result)
 			errList = append(errList, err)
 			resultLock.Unlock()
 			wg.Done()
-		}()
+		}(i)
 	}
 	wg.Wait()
 	for _, err := range errList {
@@ -95,7 +95,10 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 		return nil, nil
 	} else {
 		result := resultList[0]
-		for _, r := range resultList {
+		for i, r := range resultList {
+			if i == 0 {
+				continue
+			}
 			result.Data = append(result.Data, r.Data...)
 		}
 		return &result, nil
@@ -194,9 +197,9 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 		return nil, rightErr
 	}
 	if resultLeft == nil {
-		return resultLeft, nil
+		return nil, nil
 	} else if resultRight == nil {
-		return resultRight, nil
+		return nil, nil
 	} else {
 		conditions := op.JoinOper.JoinConditions
 		for _, condition := range conditions {
@@ -212,19 +215,7 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 		for _, f := range resultLeft.Field {
 			result.Field = append(result.Field, f)
 		}
-		skipMap := map[int]int{}
-		for i, f := range resultRight.Field {
-			isSkip := false
-			for _, condition := range conditions {
-				if condition.Rexpression.Field.FieldName == f.FieldName {
-					isSkip = true
-					break
-				}
-			}
-			if isSkip {
-				skipMap[i] = 1
-				continue
-			}
+		for _, f := range resultRight.Field {
 			result.Field = append(result.Field, f)
 		}
 		// 进行join
@@ -252,10 +243,7 @@ func (e *Executor) ExecuteJoin(op *plan.Operator_) (*QueryResult, error) {
 				for _, c := range leftCell {
 					joinCell = append(joinCell, c)
 				}
-				for i, c := range rightCell {
-					if skipMap[i] == 1 {
-						continue
-					}
+				for _, c := range rightCell {
 					joinCell = append(joinCell, c)
 				}
 				result.Data = append(result.Data, joinCell)

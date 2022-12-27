@@ -538,7 +538,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{"test#1 ", args{
+		{"test#1 join测试", args{
 			args: ExecuteQTArgs{
 				QT: planT5,
 			},
@@ -546,7 +546,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#2", args{
+		{"test#2 join测试", args{
 			args: ExecuteQTArgs{
 				QT: planT6,
 			},

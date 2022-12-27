@@ -81,12 +81,12 @@ func (q *QueryResult) String() string {
 		return ""
 	}
 	// header
-	ret := ""
+	ret := separator
 	for i, f := range q.Field {
 		if i == len(q.Field)-1 {
-			ret += f.FieldName + "\n"
+			ret += f.TableName + "." + f.FieldName + "\n"
 		} else {
-			ret += f.FieldName + separator
+			ret += f.TableName + "." + f.FieldName + separator
 		}
 	}
 	// tuple

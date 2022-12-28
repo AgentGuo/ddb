@@ -183,7 +183,7 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 					for j := range ast.InsertStmt.Fields {
 						for k := range insert.InsertOper.Fields {
 							if ast.InsertStmt.Fields[j] == insert.InsertOper.Fields[k] {
-								insert.InsertOper.Values = append(insert.InsertOper.Values, ast.InsertStmt.Values[k])
+								insert.InsertOper.Values = append(insert.InsertOper.Values, ast.InsertStmt.Values[j])
 							}
 						}
 					}
@@ -273,7 +273,7 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 					del.DeleteOper = &plan.DeleteOper_{}
 					del.DeleteOper.TableName = table.Name
 					del.Site = sitemap[table.Frags[i].SiteName]
-					if i == 0 {
+					if tree.Root == nil {
 						tree.Root = &del
 					} else {
 						tree.Root.Childs = append(tree.Root.Childs, &del)

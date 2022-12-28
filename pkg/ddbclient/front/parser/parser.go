@@ -251,8 +251,8 @@ func DDL(input string) Stmt_ {
 					table.Frags = append(table.Frags, frag)
 					meta.TableMeta = table
 
-					a, _ := json.MarshalIndent(meta.TableMeta, "", "  ")
-					fmt.Println("\n" + string(a) + "\n")
+					// a, _ := json.MarshalIndent(meta.TableMeta, "", "  ")
+					// fmt.Println("\n" + string(a) + "\n")
 					// fmt.Printf("meta.TableMeta: %v\n", meta.TableMeta)
 					meta.Write(client, meta.TableMetaType)
 
@@ -262,7 +262,7 @@ func DDL(input string) Stmt_ {
 					meta.FragmentMeta.TableName = flist[1]
 					//info?
 					// fmt.Printf("meta.FragmentMeta: %v\n", meta.FragmentMeta)
-					// meta.Write(client, meta.FragmentMetaType)//要不要写一个删除的操作？
+					meta.Write(client, meta.FragmentMetaType) //要不要写一个删除的操作？
 					client.Close()
 
 					CreateFragStmt := CreateFragStmt_{}
@@ -310,10 +310,10 @@ func DDL(input string) Stmt_ {
 					meta.SiteMeta.Ip = reg_ip.FindString(input)
 					meta.SiteMeta.Port = strings.Trim(reg_port.FindString(input), " :")
 					// fmt.Printf("meta.SiteMeta.Port: %vdf\n", meta.SiteMeta.Port)
-					fmt.Printf("meta.SiteMeta: %v\n", meta.SiteMeta)
-					// client := meta.Connect()
-					// meta.Write(client, meta.SiteMetaType)
-					// client.Close()
+					// fmt.Printf("meta.SiteMeta: %v\n", meta.SiteMeta)
+					client := meta.Connect()
+					meta.Write(client, meta.SiteMetaType)
+					client.Close()
 				}
 			default:
 				{

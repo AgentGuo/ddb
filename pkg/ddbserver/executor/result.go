@@ -77,7 +77,7 @@ func NewQueryResult(columnTypes []*sql.ColumnType, tableName string) (*QueryResu
 }
 
 func (q *QueryResult) String() string {
-	if q == nil{
+	if q == nil {
 		return ""
 	}
 	// header
@@ -102,6 +102,33 @@ func (q *QueryResult) String() string {
 	}
 	ret += fmt.Sprintf("%d row(s), %d column(s)\n", len(q.Data), len(q.Field))
 	return ret
+}
+
+func (q *QueryResult) PrintResult() {
+	if q == nil {
+		return
+	}
+	// header
+	fmt.Printf("%s", separator)
+	for i, f := range q.Field {
+		if i == len(q.Field)-1 {
+			fmt.Printf("%s", f.TableName+"."+f.FieldName+"\n")
+		} else {
+			fmt.Printf("%s", f.TableName+"."+f.FieldName+separator)
+		}
+	}
+	// tuple
+	for i, row := range q.Data {
+		fmt.Printf("%s", strconv.Itoa(i+1)+separator)
+		for j, col := range row {
+			if j == len(row)-1 {
+				fmt.Printf("%s", fmt.Sprint(col)+"\n")
+			} else {
+				fmt.Printf("%s", fmt.Sprint(col)+separator)
+			}
+		}
+	}
+	fmt.Printf("%d row(s), %d column(s)\n", len(q.Data), len(q.Field))
 }
 
 type CellType int

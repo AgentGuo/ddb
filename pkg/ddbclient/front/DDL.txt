@@ -1,3 +1,7 @@
+delete all etcd
+show tables
+show fragments
+
 create database ddb;
 create site s1(10.77.50.214:22306);
 create site s2(10.77.50.214:32306);
@@ -32,6 +36,10 @@ create fragment Orders.2(s2,Orders,hp,customer_id < 307000 and book_id >= 215000
 create fragment Orders.3(s3,Orders,hp,customer_id >= 307000 and book_id < 215000);
 create fragment Orders.4(s4,Orders,hp,customer_id >= 307000 and book_id >= 215000);
 
+show sites
+show tables
+show fragments
+
 select * from Publisher;
 
 
@@ -45,7 +53,7 @@ ans: 15000
 select Book.title from Book where copies>7000;
 ans:14937
 
-select customer_id, Book_id from Orders;
+select customer_id, book_id from Orders;
 ans: 100000
 
 select Book.title,Book.copies,Publisher.name,Publisher.nation from Book,Publisher where Book.publisher_id = Publisher.id and Publisher.nation = 'PRC' and Book.copies>1000;

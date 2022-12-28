@@ -501,9 +501,9 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 			CreateDbOper:   nil,
 			CreateFragOper: nil,
 			InsertOper: &plan.InsertOper_{
-				TableName: "Publisher",
-				Fields:    []string{"id", "name", "nation"},
-				Values:    []plan.Value_{"111", "panfeng", "CN"},
+				TableName: "Customer",
+				Fields:    []string{"id", "name"},
+				Values:    []plan.Value_{"300001", "Xiaoming"},
 			},
 			DeleteOper: nil,
 		},

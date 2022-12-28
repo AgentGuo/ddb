@@ -1,3 +1,7 @@
+delete all etcd
+show tables
+show fragments
+
 create database ddb;
 create site s1(10.77.50.214:22306);
 create site s2(10.77.50.214:32306);
@@ -32,6 +36,10 @@ create fragment Orders.2(s2,Orders,hp,customer_id < 307000 and book_id >= 215000
 create fragment Orders.3(s3,Orders,hp,customer_id >= 307000 and book_id < 215000);
 create fragment Orders.4(s4,Orders,hp,customer_id >= 307000 and book_id >= 215000);
 
+show sites
+show tables
+show fragments
+
 select * from Publisher;
 
 
@@ -45,7 +53,7 @@ ans: 15000
 select Book.title from Book where copies>7000;
 ans:14937
 
-select customer_id, Book_id from Orders;
+select customer_id, book_id from Orders;
 ans: 100000
 
 select Book.title,Book.copies,Publisher.name,Publisher.nation from Book,Publisher where Book.publisher_id = Publisher.id and Publisher.nation = 'PRC' and Book.copies>1000;
@@ -54,11 +62,33 @@ ans: 23034
 select Customer.name, Book.title,  Publisher.name, Orders.quantity from Customer,Book,Publisher,Orders where Customer.id=Orders.customer_id and Book.id=Orders.book_id and Book.publisher_id=Publisher.id and Book.id>210000 and Publisher.nation='PRC' and Orders.customer_id >= 307000 and Orders.book_id < 215000;
 ans: 2730
 
+p2p test:
+垂直分片样例
+select * from Customer;
+断开site3, site4 无影响
+断开site1, site2 查询失败
 
-insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);  
+select Customer.name from Customer;
+断开site2, site3, site4 无影响
+断开site1查询失败
 
-insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC'); 
+水平分片样例
+select * from Book where id < 210000;
+断开site3, site4无影响
+断开site1, site2失败
+
+
+insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);
+
+select * from Customer;
+
+insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC');
+
+select * from Publisher;
 
 delete from Publisher;
 
 delete from Customer;
+
+select * from Customer;
+select * from Publisher;

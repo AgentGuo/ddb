@@ -69,6 +69,10 @@ func ShowTree(tree *plan.Plantree) {
 	}
 
 	travelTreeInShow(root, tree.Root, graph, color, operType)
+	siteStr := "site-1:blue\nsite-2:yellow\nsite-3:red\nsite-4:black\n"
+	node, _ := graph.CreateNode(siteStr)
+	node.SetShape(cgraph.PlainTextShape)
+	node.SetPos(-10, 1)
 	// var buf bytes.Buffer
 	// if err := g.Render(graph, "dot", &buf); err != nil {
 	// 	log.Fatal(err)

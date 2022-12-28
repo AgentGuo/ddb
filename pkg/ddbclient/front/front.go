@@ -5,9 +5,11 @@ import (
 	// "github.com/AgentGuo/ddb/pkg/meta"
 
 	"fmt"
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
@@ -128,18 +130,30 @@ func frontfunc(input string) {
 				//	fmt.Println(dataNum)
 				//}
 				// host是主executor
-				// result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
-				// if err != nil {
-				// 	panic(err)
-				// } else {
-				// 	fmt.Println(result)
-				// }
+				start := time.Now()
+				result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+				if err != nil {
+					fmt.Printf("Query failed, err = %s\n", err)
+				} else {
+					elapsed := time.Since(start)
+					result.PrintResult()
+					fmt.Printf("Query ok, %s\n", elapsed)
+				}
 			} else {
 				ppt := plangenerator.Plangenerate(ast)
-				fmt.Printf("ppt: %v\n", ppt)
-				// ShowTree(&ppt)
+				//ShowTree(&ppt)
+				start := time.Now()
+				if ppt.Root != nil {
+					result, err := executor.RemoteExecuteQT(ppt.Root.Site, &ppt)
+					if err != nil {
+						fmt.Printf("Query failed, err = %s\n", err)
+					} else {
+						elapsed := time.Since(start)
+						result.PrintResult()
+						fmt.Printf("Query ok, %s\n", elapsed)
+					}
+				}
 			}
 		}
 	}
-
 }

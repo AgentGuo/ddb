@@ -53,3 +53,12 @@ ans: 23034
 
 select Customer.name, Book.title,  Publisher.name, Orders.quantity from Customer,Book,Publisher,Orders where Customer.id=Orders.customer_id and Book.id=Orders.book_id and Book.publisher_id=Publisher.id and Book.id>210000 and Publisher.nation='PRC' and Orders.customer_id >= 307000 and Orders.book_id < 215000;
 ans: 2730
+
+
+insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);  
+
+insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC'); 
+
+delete from Publisher;
+
+delete from Customer;

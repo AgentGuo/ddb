@@ -22,11 +22,14 @@ func ShowTree(tree *plan.Plantree) {
 	}
 
 	operType := map[int]string{
-		plan.Project:   "project",
-		plan.Predicate: "predicate",
-		plan.Union:     "union",
-		plan.Join:      "join",
-		plan.Scan:      "scan",
+		plan.Project:    "project",
+		plan.Predicate:  "predicate",
+		plan.Union:      "union",
+		plan.Join:       "join",
+		plan.Scan:       "scan",
+		plan.CreateFrag: "createfrag",
+		plan.Insert:     "insert",
+		plan.Delete:     "delete",
 	}
 	g := graphviz.New()
 	graph, err := g.Graph()

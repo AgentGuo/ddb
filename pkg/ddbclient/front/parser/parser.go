@@ -272,11 +272,11 @@ func DDL(input string) Stmt_ {
 						if strings.ToLower(flist[2]) == "vp" {
 							for _, j := range flist[3:] {
 								if table.FieldMetas[i].Name == j {
-									CreateFragStmt.Fields = append(CreateFragStmt.Fields, FieldWithInfo{table.FieldMetas[i].Name, table.FieldMetas[i].Size, table.FieldMetas[i].Type})
+									CreateFragStmt.Fields = append(CreateFragStmt.Fields, plan.FieldWithInfo{FieldName: table.FieldMetas[i].Name, Size: table.FieldMetas[i].Size, Type: table.FieldMetas[i].Type})
 								}
 							}
 						} else {
-							CreateFragStmt.Fields = append(CreateFragStmt.Fields, FieldWithInfo{table.FieldMetas[i].Name, table.FieldMetas[i].Size, table.FieldMetas[i].Type})
+							CreateFragStmt.Fields = append(CreateFragStmt.Fields, plan.FieldWithInfo{FieldName: table.FieldMetas[i].Name, Size: table.FieldMetas[i].Size, Type: table.FieldMetas[i].Type})
 						}
 					}
 
@@ -357,13 +357,21 @@ func genInsertStmt(stmt *sqlparser.Insert) Stmt_ {
 	// buf.Myprintf("%v",
 	// 	stmt.Rows)
 	stmt.Rows.Format(buf)
-	reg_insert := regexp.MustCompile(`[0-9]+`)
-	numlist := reg_insert.FindAllString(buf.String(), -1)
+	// fmt.Printf("buf.String(): %v\n", buf.String())
+	reg_insert_pre := regexp.MustCompile(`\(.*\)`)
+	numlist_pre := reg_insert_pre.FindString(buf.String())
+	// fmt.Printf("numlist_pre: %v\n", numlist_pre)
+
+	reg_insert := regexp.MustCompile(`[0-9a-zA-Z\' ]+`)
+	numlist := reg_insert.FindAllString(numlist_pre, -1)
+	for i := range numlist {
+		numlist[i] = strings.Replace(numlist[i], "'", "", -1)
+		numlist[i] = strings.Trim(numlist[i], " ")
+	}
 	// fmt.Printf("numlist: %v\n", numlist)
 	for i := range numlist {
 		InsertStmt.Values = append(InsertStmt.Values, plan.Value_(numlist[i]))
 	}
-	fmt.Printf("InsertStmt: %v\n", InsertStmt)
 	ast := Stmt_{
 		Type:       Insert,
 		InsertStmt: &InsertStmt,

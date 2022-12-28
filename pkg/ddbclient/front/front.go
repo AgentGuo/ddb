@@ -136,8 +136,7 @@ func frontfunc(input string) {
 			fmt.Printf("Query failed, err = %s\n", err)
 		} else {
 			elapsed := time.Since(start)
-			fmt.Println(result)
-			fmt.Printf("Query ok, %s", elapsed)
+			fmt.Printf("%sQuery ok, %s\n", result, elapsed)
 		}
 	}else {
 		ppt := plangenerator.Plangenerate(ast)

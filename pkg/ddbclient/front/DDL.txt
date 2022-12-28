@@ -54,10 +54,25 @@ ans: 23034
 select Customer.name, Book.title,  Publisher.name, Orders.quantity from Customer,Book,Publisher,Orders where Customer.id=Orders.customer_id and Book.id=Orders.book_id and Book.publisher_id=Publisher.id and Book.id>210000 and Publisher.nation='PRC' and Orders.customer_id >= 307000 and Orders.book_id < 215000;
 ans: 2730
 
+p2p test:
+垂直分片样例
+select * from Customer;
+断开site3, site4 无影响
+断开site1, site2 查询失败
 
-insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);  
+select Customer.name from Customer;
+断开site2, site3, site4 无影响
+断开site1查询失败
 
-insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC'); 
+水平分片样例
+select * from Book where id < 210000;
+断开site3, site4无影响
+断开site1, site2失败
+
+
+insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);
+
+insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC');
 
 delete from Publisher;
 

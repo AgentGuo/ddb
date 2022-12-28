@@ -81,7 +81,9 @@ func (e *Executor) ExecuteUnion(op *plan.Operator_) (*QueryResult, error) {
 		go func(index int) {
 			result, err := e.ExecuteFunc(op.Childs[index])
 			resultLock.Lock()
-			resultList = append(resultList, *result)
+			if result != nil {
+				resultList = append(resultList, *result)
+			}
 			errList = append(errList, err)
 			resultLock.Unlock()
 			wg.Done()
@@ -410,6 +412,25 @@ func (e *Executor) ExecuteInsert(op *plan.Operator_) (*QueryResult, error) {
 	if op.InsertOper == nil {
 		return nil, fmt.Errorf("insert operation is nil")
 	}
+	wg := sync.WaitGroup{}
+	resultLock := sync.Mutex{}
+	errList := []error{}
+	for i, _ := range op.Childs {
+		wg.Add(1)
+		go func(index int) {
+			_, err := e.ExecuteFunc(op.Childs[index])
+			resultLock.Lock()
+			errList = append(errList, err)
+			resultLock.Unlock()
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	for _, err := range errList {
+		if err != nil {
+			return nil, err
+		}
+	}
 	fieldStr, valueStr := "", ""
 	for i, f := range op.InsertOper.Fields {
 		fieldStr += f
@@ -448,6 +469,25 @@ func (e *Executor) ExecuteDelete(op *plan.Operator_) (*QueryResult, error) {
 	}
 	if op.DeleteOper == nil {
 		return nil, fmt.Errorf("delete operation is nil")
+	}
+	wg := sync.WaitGroup{}
+	resultLock := sync.Mutex{}
+	errList := []error{}
+	for i, _ := range op.Childs {
+		wg.Add(1)
+		go func(index int) {
+			_, err := e.ExecuteFunc(op.Childs[index])
+			resultLock.Lock()
+			errList = append(errList, err)
+			resultLock.Unlock()
+			wg.Done()
+		}(i)
+	}
+	wg.Wait()
+	for _, err := range errList {
+		if err != nil {
+			return nil, err
+		}
 	}
 	tx, err := e.Db.Begin()
 	if err != nil {

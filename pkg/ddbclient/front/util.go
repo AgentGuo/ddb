@@ -46,6 +46,20 @@ func ShowTree(tree *plan.Plantree) {
 	cnt += 1
 	root.SetColor(color[tree.Root.Site])
 
+	if tree.Root.OperType == plan.Project {
+		for j := range tree.Root.ProjectOper.Fields {
+			root.SetComment(tree.Root.ProjectOper.Fields[j].TableName + ":" + tree.Root.ProjectOper.Fields[j].FieldName)
+		}
+	} else if tree.Root.OperType == plan.Predicate {
+
+	} else if tree.Root.OperType == plan.Union {
+
+	} else if tree.Root.OperType == plan.Join {
+
+	} else if tree.Root.OperType == plan.Scan {
+
+	}
+
 	travelTreeInShow(root, tree.Root, graph, color, operType)
 	// var buf bytes.Buffer
 	// if err := g.Render(graph, "dot", &buf); err != nil {
@@ -78,7 +92,9 @@ func travelTreeInShow(parentNode *cgraph.Node, oper *plan.Operator_, graph *cgra
 			cnt += 1
 
 			if oper.Childs[id].OperType == plan.Project {
-
+				for j := range oper.Childs[id].ProjectOper.Fields {
+					node.SetComment(oper.Childs[id].ProjectOper.Fields[j].TableName + ":" + oper.Childs[id].ProjectOper.Fields[j].FieldName)
+				}
 			} else if oper.Childs[id].OperType == plan.Predicate {
 
 			} else if oper.Childs[id].OperType == plan.Union {

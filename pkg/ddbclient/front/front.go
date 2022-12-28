@@ -9,8 +9,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
-
 	"github.com/AgentGuo/ddb/cmd/ddbclient/config"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/optimizer"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
@@ -68,6 +66,10 @@ func frontfunc(input string) {
 
 		opt := optimizer.Optimize(ppt)
 		// opt.Root = opt.Root.Childs[0].Childs[0].Childs[0].Childs[0].Childs[0]
+		// for i := range opt.Root.Childs[0].Childs[0].ProjectOper.Fields {
+		// 	fmt.Printf("opt.Root.Childs[0].Childs[0].ProjectOper.Fields[i].TableName: %v\n", opt.Root.Childs[0].Childs[0].ProjectOper.Fields[i].TableName)
+		// 	fmt.Printf("opt.Root.Childs[0].Childs[0].ProjectOper.Fields[i].FieldName: %v\n", opt.Root.Childs[0].Childs[0].ProjectOper.Fields[i].FieldName)
+		// }
 		ShowTree(&opt)
 		// fmt.Printf("opt: %v\n", opt)
 		// fmt.Printf("opt.Root.OperType: %v\n", opt.Root.OperType)
@@ -103,11 +105,11 @@ func frontfunc(input string) {
 		//	fmt.Println(dataNum)
 		//}
 		// host是主executor
-		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
-		if err != nil {
-			panic(err)
-		} else {
-			fmt.Println(result)
-		}
+		// result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
+		// if err != nil {
+		// 	panic(err)
+		// } else {
+		// 	fmt.Println(result)
+		// }
 	}
 }

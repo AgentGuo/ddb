@@ -425,19 +425,43 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 				newProj0.Site = newProj0.Childs[0].Site
 			}
 		} else if root.Childs[0].OperType == plan.Scan || root.Childs[0].OperType == plan.Predicate {
-			newProj0 := plan.Operator_{}
-			newProj0.OperType = plan.Project
-			newProj0.ProjectOper = &plan.ProjectOper_{}
-			json.Unmarshal(v, &newProj0.ProjectOper.Fields)
-			newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Lexpression.Field)
+			PD := true
+			if root.Childs[0].OperType == plan.Scan && root.Childs[0].ScanOper.Frag.IsVertical && root.Childs[1].OperType == plan.Scan && root.Childs[1].ScanOper.Frag.IsVertical && root.Childs[0].ScanOper.TableName == root.Childs[1].ScanOper.TableName {
 
-			// root.Childs[0].Parent = &newProj0
-			newProj0.Childs = append(newProj0.Childs, root.Childs[0])
+				for k1 := range root.Childs[0].ScanOper.Frag.Cols {
+					var ok bool = false
+					for k := range *proj {
+						if (*proj)[k].TableName == root.Childs[0].ScanOper.TableName && (*proj)[k].FieldName == root.Childs[0].ScanOper.Frag.Cols[k1] {
+							ok = true
+						}
+					}
+					if ok {
+						PD = false
+						break
+					}
+				}
+			}
+			if PD {
+				// for k := range *proj {
+				// 	if (*proj)[k].TableName == root.JoinOper.JoinConditions[0].Lexpression.Field.TableName && (*proj)[k].FieldName == root.JoinOper.JoinConditions[0].Lexpression.Field.FieldName {
 
-			root.Childs[0] = &newProj0
-			// newProj0.Parent = root
+				// 	}
+				// }
 
-			newProj0.Site = newProj0.Childs[0].Site
+				newProj0 := plan.Operator_{}
+				newProj0.OperType = plan.Project
+				newProj0.ProjectOper = &plan.ProjectOper_{}
+				json.Unmarshal(v, &newProj0.ProjectOper.Fields)
+				newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Lexpression.Field)
+
+				// root.Childs[0].Parent = &newProj0
+				newProj0.Childs = append(newProj0.Childs, root.Childs[0])
+
+				root.Childs[0] = &newProj0
+				// newProj0.Parent = root
+
+				newProj0.Site = newProj0.Childs[0].Site
+			}
 		} else {
 			fmt.Println("error in travelTreeInPDProj")
 		}
@@ -475,19 +499,37 @@ func travelTreeInPDProj(root *plan.Operator_, proj *[]plan.Field_) {
 				newProj0.Site = newProj0.Childs[0].Site
 			}
 		} else if root.Childs[1].OperType == plan.Scan || root.Childs[1].OperType == plan.Predicate {
-			newProj0 := plan.Operator_{}
-			newProj0.OperType = plan.Project
-			newProj0.ProjectOper = &plan.ProjectOper_{}
-			json.Unmarshal(v, &newProj0.ProjectOper.Fields)
-			newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Rexpression.Field)
+			PD := true
+			if root.Childs[0].OperType == plan.Scan && root.Childs[0].ScanOper.Frag.IsVertical && root.Childs[1].OperType == plan.Scan && root.Childs[1].ScanOper.Frag.IsVertical && root.Childs[0].ScanOper.TableName == root.Childs[1].ScanOper.TableName {
 
-			// root.Childs[1].Parent = &newProj0
-			newProj0.Childs = append(newProj0.Childs, root.Childs[1])
+				for k1 := range root.Childs[1].ScanOper.Frag.Cols {
+					var ok bool = false
+					for k := range *proj {
+						if (*proj)[k].TableName == root.Childs[1].ScanOper.TableName && (*proj)[k].FieldName == root.Childs[1].ScanOper.Frag.Cols[k1] {
+							ok = true
+						}
+					}
+					if ok {
+						PD = false
+						break
+					}
+				}
+			}
+			if PD {
+				newProj0 := plan.Operator_{}
+				newProj0.OperType = plan.Project
+				newProj0.ProjectOper = &plan.ProjectOper_{}
+				json.Unmarshal(v, &newProj0.ProjectOper.Fields)
+				newProj0.ProjectOper.Fields = append(newProj0.ProjectOper.Fields, root.JoinOper.JoinConditions[0].Rexpression.Field)
 
-			root.Childs[1] = &newProj0
-			// newProj0.Parent = root
+				// root.Childs[1].Parent = &newProj0
+				newProj0.Childs = append(newProj0.Childs, root.Childs[1])
 
-			newProj0.Site = newProj0.Childs[0].Site
+				root.Childs[1] = &newProj0
+				// newProj0.Parent = root
+
+				newProj0.Site = newProj0.Childs[0].Site
+			}
 		} else {
 			fmt.Println("error in travelTreeInPDProj")
 		}

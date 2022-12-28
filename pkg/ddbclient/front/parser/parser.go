@@ -53,22 +53,29 @@ func Parse(input string) Stmt_ {
 
 func genSelectStmt(stmt *sqlparser.Select) Stmt_ {
 	astSelect := SelectStmt_{}
+
+	for i := range stmt.From {
+		astSelect.Tables = append(astSelect.Tables, stmt.From[i].(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String())
+	}
 	for i := range stmt.SelectExprs {
 		switch stmtIn := stmt.SelectExprs[i].(type) {
 		case *sqlparser.AliasedExpr:
 			{
-				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: stmtIn.Expr.(*sqlparser.ColName).Qualifier.Name.String(), FieldName: stmtIn.Expr.(*sqlparser.ColName).Name.String()})
+				//假设多表时的条件一定加上表名
+				tableName := stmtIn.Expr.(*sqlparser.ColName).Qualifier.Name.String()
+				if tableName == "" {
+					tableName = astSelect.Tables[0]
+				}
+
+				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: tableName, FieldName: stmtIn.Expr.(*sqlparser.ColName).Name.String()})
 			}
 		case *sqlparser.StarExpr:
 			{
-				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: "", FieldName: "*"})
+				//假设一定是单表
+				astSelect.Fields = append(astSelect.Fields, plan.Field_{TableName: astSelect.Tables[0], FieldName: "*"})
 			}
 		}
 	}
-	for i := range stmt.From {
-		astSelect.Tables = append(astSelect.Tables, stmt.From[i].(*sqlparser.AliasedTableExpr).Expr.(sqlparser.TableName).Name.String())
-	}
-
 	// fmt.Printf("astSelect.Tables: %v\n", astSelect.Tables)
 
 	if stmt.Where != nil {

@@ -38,11 +38,17 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 				// fmt.Println("\n" + string(a) + "\n")
 				if table.RouterMeta.IsVertical {
 					for i := range table.Frags {
+						// for m := range table.Frags {
+						// 	fmt.Printf("table.Frags[m].Cols: %v\n", table.Frags[m].Cols)
+						// }
 						need := false
 						//假设只有单表才会用*
 						if ast.SelectStmt.Fields[0].FieldName != "*" {
 							for j := range ast.SelectStmt.Fields {
+								// fmt.Printf("ast.SelectStmt.Fields[j].TableName: %v\n", ast.SelectStmt.Fields[j].TableName)
+								// fmt.Printf("table.Name: %v\n", table.Name)
 								if ast.SelectStmt.Fields[j].TableName == table.Name {
+									// fmt.Println("here")
 									for k := range table.Frags[i].Cols {
 										if ast.SelectStmt.Fields[j].FieldName == table.Frags[i].Cols[k] {
 											need = true
@@ -111,8 +117,17 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 
 				tree.Root = &project
 				project.Childs = append(project.Childs, &predicate)
-			} else if join_groups[0][0].ScanOper.Frag.IsVertical {
-				project.ProjectOper.Fields = append(project.ProjectOper.Fields, ast.SelectStmt.Fields...)
+			} else if join_groups[0][0].ScanOper.Frag.IsVertical { //假设只有单表才会用*
+				tableName := ast.SelectStmt.Tables[0]
+				client := meta.Connect()
+				data := meta.ReadLogi(client, meta.DefaultDbName, tableName, meta.TableMetaType)
+				var table meta.TableMeta_
+				json.Unmarshal(data, &table)
+				client.Close()
+
+				for i := range table.FieldMetas {
+					project.ProjectOper.Fields = append(project.ProjectOper.Fields, plan.Field_{TableName: tableName, FieldName: table.FieldMetas[i].Name})
+				}
 
 				tree.Root = &project
 				project.Childs = append(project.Childs, &predicate)
@@ -122,8 +137,10 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 			}
 			genJoin(&join_groups, &predicate, ast.SelectStmt)
 
+			// fmt.Printf("len(join_groups): %v\n", len(join_groups))
 			if len(ast.SelectStmt.ConditionUnits) == 0 {
 				if tree.Root.OperType == plan.Project {
+					// fmt.Printf("len(predicate.Childs): %v\n", len(predicate.Childs))
 					tree.Root.Childs[0] = predicate.Childs[0]
 				} else if tree.Root.OperType == plan.Predicate {
 					tree.Root = predicate.Childs[0]

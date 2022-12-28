@@ -151,3 +151,32 @@ func ReadLogi(client *clientv3.Client, DbName string, TableName string, metatype
 		}
 	}
 }
+func DeleteAll(client *clientv3.Client) {
+	kv := clientv3.NewKV(client)
+	// ctx, cancel := context.WithTimeout(rootContext, time.Duration(5)*time.Second)
+	ctx := context.TODO()
+
+	delResp, err := kv.Delete(ctx, "db/"+DefaultDbName+"/", clientv3.WithPrefix(), clientv3.WithPrevKV())
+	if err != nil {
+		fmt.Println(err)
+	}
+	if delResp.PrevKvs != nil {
+		if len(delResp.PrevKvs) != 0 {
+			for _, kvpair := range delResp.PrevKvs {
+				fmt.Println("已删除:", string(kvpair.Key), string(kvpair.Value))
+			}
+		}
+	}
+
+	delResp1, err1 := kv.Delete(ctx, "site/", clientv3.WithPrefix(), clientv3.WithPrevKV())
+	if err1 != nil {
+		fmt.Println(err1)
+	}
+	if delResp1.PrevKvs != nil {
+		if len(delResp1.PrevKvs) != 0 {
+			for _, kvpair := range delResp1.PrevKvs {
+				fmt.Println("已删除:", string(kvpair.Key), string(kvpair.Value))
+			}
+		}
+	}
+}

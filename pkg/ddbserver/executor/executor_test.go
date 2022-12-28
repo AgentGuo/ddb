@@ -20,8 +20,8 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 		Db   *sql.DB
 	}
 	type args struct {
-		args  ExecutorQTArgs
-		reply *ExecutorQTReply
+		args  ExecuteQTArgs
+		reply *ExecuteQTReply
 	}
 	planT1 := plan.Plantree{
 		Root: &plan.Operator_{
@@ -148,7 +148,7 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Publisher"},
+					ScanOper:      &plan.ScanOper_{TableName: "Book"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -167,16 +167,16 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 							IsField: true,
 							Field: plan.Field_{
 								TableName: "",
-								FieldName: "name",
+								FieldName: "copies",
 							},
 							Value: "",
 						},
 						Rexpression: plan.Expression_{
 							IsField: false,
 							Field:   plan.Field_{},
-							Value:   "Publisher #100009",
+							Value:   "7000",
 						},
-						CompOp: plan.Le,
+						CompOp: plan.Gt,
 					},
 				},
 			},
@@ -234,42 +234,42 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 		wantErr bool
 	}{
 		{"test#1 单个scan", args{
-			args: ExecutorQTArgs{
+			args: ExecuteQTArgs{
 				QT: planT1,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
 		{"test#2 两个scan再union", args{
-			args: ExecutorQTArgs{
+			args: ExecuteQTArgs{
 				QT: planT2,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
 		{"test#3 scan+小于predicate", args{
-			args: ExecutorQTArgs{
+			args: ExecuteQTArgs{
 				QT: planT3,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#4 scan+小于等于predicate", args{
-			args: ExecutorQTArgs{
+		{"test#4 scan+大于predicate", args{
+			args: ExecuteQTArgs{
 				QT: planT4,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
 		{"test#5 scan+project", args{
-			args: ExecutorQTArgs{
+			args: ExecuteQTArgs{
 				QT: planT7,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
@@ -287,8 +287,8 @@ func TestExecutor_ExecutorQT(t *testing.T) {
 	e.Ip = "10.77.50.214"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := e.ExecutorQT(tt.args.args, tt.args.reply); (err != nil) != tt.wantErr {
-				t.Errorf("ExecutorQT() error = %v, wantErr %v", err, tt.wantErr)
+			if err := e.ExecuteQT(tt.args.args, tt.args.reply); (err != nil) != tt.wantErr {
+				t.Errorf("ExecuteQT() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			fmt.Println("get result:\n", tt.args.reply.QueryResult)
 		})
@@ -302,8 +302,8 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 		Db   *sql.DB
 	}
 	type args struct {
-		args  ExecutorQTArgs
-		reply *ExecutorQTReply
+		args  ExecuteQTArgs
+		reply *ExecuteQTReply
 	}
 	planT5 := plan.Plantree{
 		Root: &plan.Operator_{
@@ -316,7 +316,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					ScanOper:      &plan.ScanOper_{TableName: "Orders"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -329,7 +329,7 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 					NeedTransfer:  false,
 					DestSite:      "",
 					OperType:      plan.Scan,
-					ScanOper:      &plan.ScanOper_{TableName: "Customer"},
+					ScanOper:      &plan.ScanOper_{TableName: "Book"},
 					PredicateOper: nil,
 					JoinOper:      nil,
 					UnionOper:     nil,
@@ -350,15 +350,15 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 						Lexpression: plan.Expression_{
 							IsField: true,
 							Field: plan.Field_{
-								TableName: "Customer",
-								FieldName: "id",
+								TableName: "Orders",
+								FieldName: "book_id",
 							},
 							Value: "",
 						},
 						Rexpression: plan.Expression_{
 							IsField: true,
 							Field: plan.Field_{
-								TableName: "Customer",
+								TableName: "Book",
 								FieldName: "id",
 							},
 							Value: "",
@@ -441,24 +441,140 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 		OperatorNum: -1,
 	}
 
+	planT8 := plan.Plantree{
+		Root: &plan.Operator_{
+			FragName:      "",
+			Unused:        false,
+			Parent:        nil,
+			Childs:        nil,
+			Site:          "127.0.0.1:13306",
+			NeedTransfer:  false,
+			DestSite:      "",
+			OperType:      plan.CreateFrag,
+			ScanOper:      nil,
+			PredicateOper: nil,
+			JoinOper:      nil,
+			UnionOper:     nil,
+			ProjectOper:   nil,
+			CreateDbOper:  nil,
+			CreateFragOper: &plan.CreateFragOper_{
+				TableName: "testTb",
+				Fields: []plan.FieldWithInfo{
+					plan.FieldWithInfo{
+						FieldName: "a",
+						Size:      0,
+						Type:      "INT",
+					},
+					plan.FieldWithInfo{
+						FieldName: "b",
+						Size:      0,
+						Type:      "DOUBLE",
+					},
+					plan.FieldWithInfo{
+						FieldName: "c",
+						Size:      20,
+						Type:      "CHAR",
+					},
+				},
+			},
+			InsertOper: nil,
+			DeleteOper: nil,
+		},
+		OperatorNum: 0,
+	}
+
+	planT9 := plan.Plantree{
+		Root: &plan.Operator_{
+			FragName:       "",
+			Unused:         false,
+			Parent:         nil,
+			Childs:         nil,
+			Site:           "127.0.0.1:13306",
+			NeedTransfer:   false,
+			DestSite:       "",
+			OperType:       plan.Insert,
+			ScanOper:       nil,
+			PredicateOper:  nil,
+			JoinOper:       nil,
+			UnionOper:      nil,
+			ProjectOper:    nil,
+			CreateDbOper:   nil,
+			CreateFragOper: nil,
+			InsertOper: &plan.InsertOper_{
+				TableName: "Publisher",
+				Fields:    []string{"id", "name", "nation"},
+				Values:    []plan.Value_{"111", "panfeng", "CN"},
+			},
+			DeleteOper: nil,
+		},
+		OperatorNum: 0,
+	}
+
+	planT10 := plan.Plantree{
+		Root: &plan.Operator_{
+			FragName:       "",
+			Unused:         false,
+			Parent:         nil,
+			Childs:         nil,
+			Site:           "127.0.0.1:13306",
+			NeedTransfer:   false,
+			DestSite:       "",
+			OperType:       plan.Delete,
+			ScanOper:       nil,
+			PredicateOper:  nil,
+			JoinOper:       nil,
+			UnionOper:      nil,
+			ProjectOper:    nil,
+			CreateDbOper:   nil,
+			CreateFragOper: nil,
+			InsertOper:     nil,
+			DeleteOper:     &plan.DeleteOper_{TableName: "Publisher"},
+		},
+		OperatorNum: 0,
+	}
+
 	tests := []struct {
 		name    string
 		args    args
 		wantErr bool
 	}{
-		{"test#1 ", args{
-			args: ExecutorQTArgs{
+		{"test#1 join测试", args{
+			args: ExecuteQTArgs{
 				QT: planT5,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
-		{"test#2", args{
-			args: ExecutorQTArgs{
+		{"test#2 join测试", args{
+			args: ExecuteQTArgs{
 				QT: planT6,
 			},
-			reply: &ExecutorQTReply{
+			reply: &ExecuteQTReply{
+				QueryResult: &QueryResult{},
+			},
+		}, false},
+		{"test#3 createFrag测试", args{
+			args: ExecuteQTArgs{
+				QT: planT8,
+			},
+			reply: &ExecuteQTReply{
+				QueryResult: &QueryResult{},
+			},
+		}, false},
+		{"test#4 insert测试", args{
+			args: ExecuteQTArgs{
+				QT: planT9,
+			},
+			reply: &ExecuteQTReply{
+				QueryResult: &QueryResult{},
+			},
+		}, false},
+		{"test#5 delete测试", args{
+			args: ExecuteQTArgs{
+				QT: planT10,
+			},
+			reply: &ExecuteQTReply{
 				QueryResult: &QueryResult{},
 			},
 		}, false},
@@ -476,10 +592,50 @@ func TestExecutor_ExecutorQT1(t *testing.T) {
 	e.Ip = "127.0.0.1"
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := e.ExecutorQT(tt.args.args, tt.args.reply); (err != nil) != tt.wantErr {
-				t.Errorf("ExecutorQT() error = %v, wantErr %v", err, tt.wantErr)
+			if err := e.ExecuteQT(tt.args.args, tt.args.reply); (err != nil) != tt.wantErr {
+				t.Errorf("ExecuteQT() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			fmt.Println("get result:\n", tt.args.reply.QueryResult)
+		})
+	}
+}
+
+func TestExecutor_GetDataNum(t *testing.T) {
+	type args struct {
+		args  GetDataNumArgs
+		reply *GetDataNumReply
+	}
+	tests := []struct {
+		name    string
+		args    args
+		wantErr bool
+	}{
+		{"test#1", args{
+			args:  GetDataNumArgs{Table: "Publisher"},
+			reply: &GetDataNumReply{DataNum: 0},
+		}, false},
+		{"test#2", args{
+			args:  GetDataNumArgs{Table: "Customer"},
+			reply: &GetDataNumReply{DataNum: 0},
+		}, false},
+	}
+	e := NewExecutor(&config.ServerConfig{
+		ServerPort: 13306,
+		ETCDPort:   -1,
+		MysqlConfig: config.MysqlConfig{
+			Ip:     "10.77.50.214",
+			Port:   "23306",
+			User:   "root",
+			Passwd: "foobar",
+		},
+	})
+	e.Ip = "127.0.0.1"
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := e.GetDataNum(tt.args.args, tt.args.reply); (err != nil) != tt.wantErr {
+				t.Errorf("GetDataNum() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			fmt.Println("get result:", tt.args.reply.DataNum)
 		})
 	}
 }

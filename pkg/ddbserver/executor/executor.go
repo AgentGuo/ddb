@@ -28,14 +28,26 @@ type Executor struct {
 	Db   *sql.DB // executor本地db
 }
 
-func (e *Executor) ExecutorQT(args ExecutorQTArgs, reply *ExecutorQTReply) error {
+func (e *Executor) ExecuteQT(args ExecuteQTArgs, reply *ExecuteQTReply) error {
 	result, err := e.ExecuteFunc(args.QT.Root)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 	(*reply).QueryResult = result
-	log.Printf("ExecutorQT: result row num = %d", len((*reply).QueryResult.Data))
+	if (*reply).QueryResult != nil {
+		log.Printf("ExecuteQT: result row num = %d\n", len((*reply).QueryResult.Data))
+	}
+	return nil
+}
+
+func (e *Executor) GetDataNum(args GetDataNumArgs, reply *GetDataNumReply) error {
+	result, err := e.ExecuteSelectCount(args.Table)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	(*reply).DataNum = result
 	return nil
 }
 
@@ -64,6 +76,12 @@ func (e *Executor) ExecuteFunc(op *plan.Operator_) (*QueryResult, error) {
 			return e.ExecuteJoin(op)
 		case plan.Project:
 			return e.ExecuteProject(op)
+		case plan.CreateFrag:
+			return e.ExecuteCreateFrag(op)
+		case plan.Insert:
+			return e.ExecuteInsert(op)
+		case plan.Delete:
+			return e.ExecuteDelete(op)
 		default:
 			return nil, fmt.Errorf("op = %d not implemented", op.OperType)
 		}

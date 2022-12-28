@@ -95,6 +95,13 @@ func frontfunc(input string) {
 		// fmt.Println()
 		//fmt.Printf("ppt.Root: %v\n", ppt.Root)
 
+		// 获取数据量的接口
+		//dataNum, err := executor.RemoteGetDataNum("10.77.50.214:22306", "Publisher")
+		//if err != nil {
+		//	panic(err)
+		//} else {
+		//	fmt.Println(dataNum)
+		//}
 		// host是主executor
 		result, err := executor.RemoteExecuteQT(opt.Root.Site, &opt)
 		if err != nil {

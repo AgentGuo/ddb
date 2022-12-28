@@ -13,6 +13,7 @@ import (
 const (
 	ExecutorSvc = "ExecutorService"
 	ExecuteQT   = "ExecuteQT"
+	GetDataNum  = "GetDataNum"
 )
 
 type ExecuteQTArgs struct {

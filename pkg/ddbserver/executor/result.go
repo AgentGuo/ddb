@@ -100,7 +100,7 @@ func (q *QueryResult) String() string {
 			}
 		}
 	}
-	ret += fmt.Sprintf("total count = %d\n", len(q.Data))
+	ret += fmt.Sprintf("%d row(s), %d column(s)\n", len(q.Data), len(q.Field))
 	return ret
 }
 

@@ -138,8 +138,18 @@ func frontfunc(input string) {
 			elapsed := time.Since(start)
 			fmt.Printf("%sQuery ok, %s\n", result, elapsed)
 		}
-	}else {
+	} else {
 		ppt := plangenerator.Plangenerate(ast)
-		ShowTree(&ppt)
+		//ShowTree(&ppt)
+		start := time.Now()
+		if ppt.Root != nil {
+			result, err := executor.RemoteExecuteQT(ppt.Root.Site, &ppt)
+			if err != nil {
+				fmt.Printf("Query failed, err = %s\n", err)
+			} else {
+				elapsed := time.Since(start)
+				fmt.Printf("%sQuery ok, %s\n", result, elapsed)
+			}
+		}
 	}
 }

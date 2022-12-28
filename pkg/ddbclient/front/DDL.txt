@@ -72,8 +72,15 @@ select * from Book where id < 210000;
 
 insert into Customer(id, name, rank) values(300001, 'Xiaoming', 1);
 
+select * from Customer;
+
 insert into Publisher(id, name, nation) values(104001,'High Education Press', 'PRC');
+
+select * from Publisher;
 
 delete from Publisher;
 
 delete from Customer;
+
+select * from Customer;
+select * from Publisher;

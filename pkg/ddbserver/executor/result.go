@@ -77,7 +77,7 @@ func NewQueryResult(columnTypes []*sql.ColumnType, tableName string) (*QueryResu
 }
 
 func (q *QueryResult) String() string {
-	if q == nil || q.Data == nil {
+	if q == nil{
 		return ""
 	}
 	// header

@@ -381,10 +381,10 @@ func (e *Executor) ExecuteCreateFrag(op *plan.Operator_) (*QueryResult, error) {
 	}
 	filedStr := ""
 	for i, f := range op.CreateFragOper.Fields {
-		if f.Type == "CHAR" {
-			filedStr += fmt.Sprintf("%s %s(%d)", f.FieldName, f.Type, f.Size)
+		if (f.Type == "CHAR" || f.Type == "char") && f.Size != 0 {
+			filedStr += fmt.Sprintf("`%s` %s(%d)", f.FieldName, f.Type, f.Size)
 		} else {
-			filedStr += fmt.Sprintf("%s %s", f.FieldName, f.Type)
+			filedStr += fmt.Sprintf("`%s` %s", f.FieldName, f.Type)
 		}
 		if i != len(op.CreateFragOper.Fields)-1 {
 			filedStr += ", "
@@ -433,7 +433,7 @@ func (e *Executor) ExecuteInsert(op *plan.Operator_) (*QueryResult, error) {
 	}
 	fieldStr, valueStr := "", ""
 	for i, f := range op.InsertOper.Fields {
-		fieldStr += f
+		fieldStr += "`" + f + "`"
 		if i != len(op.InsertOper.Fields)-1 {
 			fieldStr += ","
 		}

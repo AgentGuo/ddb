@@ -17,16 +17,16 @@ type SelectStmt_ struct {
 	ConditionUnits []plan.ConditionUnit_
 }
 
-type FieldWithInfo struct {
-	FieldName string
-	Size      int64
-	Type      string
-}
+// type FieldWithInfo struct {
+// 	FieldName string
+// 	Size      int64
+// 	Type      string
+// }
 
 type CreateFragStmt_ struct {
 	TableName string
 	SiteName  string
-	Fields    []FieldWithInfo
+	Fields    []plan.FieldWithInfo
 }
 
 type InsertStmt_ struct {

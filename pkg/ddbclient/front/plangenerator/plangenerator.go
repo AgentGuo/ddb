@@ -7,25 +7,26 @@ import (
 
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/parser"
 	"github.com/AgentGuo/ddb/pkg/ddbclient/front/plan"
+	"github.com/AgentGuo/ddb/pkg/ddbserver/executor"
 	"github.com/AgentGuo/ddb/pkg/meta"
 )
 
 func Plangenerate(ast parser.Stmt_) plan.Plantree {
 	tree := plan.Plantree{}
+
+	sitemap := map[string]string{}
+	client := meta.Connect()
+	for i := 1; i < 5; i += 1 {
+		site_bi := meta.ReadPhys(client, "s"+strconv.Itoa(i), "", meta.SiteMetaType)
+		var site meta.SiteMeta_
+		json.Unmarshal(site_bi, &site)
+		sitemap[site.Name] = site.Ip + ":" + site.Port
+	}
+	client.Close()
+
 	switch ast.Type {
 	case parser.Select:
 		{
-			sitemap := map[string]string{}
-			client := meta.Connect()
-			for i := 1; i < 5; i += 1 {
-				site_bi := meta.ReadPhys(client, "s"+strconv.Itoa(i), "", meta.SiteMetaType)
-				var site meta.SiteMeta_
-				json.Unmarshal(site_bi, &site)
-				sitemap[site.Name] = site.Ip + ":" + site.Port
-			}
-			client.Close()
-			// fmt.Printf("sitemap: %v\n", sitemap)
-
 			join_groups := [][]plan.Operator_{}
 			for _, t := range ast.SelectStmt.Tables {
 				client := meta.Connect()
@@ -151,14 +152,135 @@ func Plangenerate(ast parser.Stmt_) plan.Plantree {
 		}
 	case parser.CreateFrag:
 		{
-
+			createFrag := plan.Operator_{}
+			createFrag.OperType = plan.CreateFrag
+			createFrag.CreateFragOper = &plan.CreateFragOper_{}
+			createFrag.CreateFragOper.TableName = ast.CreateFragStmt.TableName
+			createFrag.CreateFragOper.Fields = append(createFrag.CreateFragOper.Fields, ast.CreateFragStmt.Fields...)
+			createFrag.Site = sitemap[ast.CreateFragStmt.SiteName]
+			tree.Root = &createFrag
+			return tree
 		}
 	case parser.Insert:
 		{
+			client := meta.Connect()
+			data := meta.ReadLogi(client, meta.DefaultDbName, ast.InsertStmt.TableName, meta.TableMetaType)
+			var table meta.TableMeta_
+			json.Unmarshal(data, &table)
+			client.Close()
 
+			if table.RouterMeta.IsVertical {
+				for i := range table.Frags {
+					insert := plan.Operator_{}
+					insert.OperType = plan.Insert
+					insert.InsertOper = &plan.InsertOper_{}
+					insert.InsertOper.TableName = table.Name
+
+					for j := range table.Frags[i].Cols {
+						insert.InsertOper.Fields = append(insert.InsertOper.Fields, table.Frags[i].Cols[j])
+					}
+
+					for j := range ast.InsertStmt.Fields {
+						for k := range insert.InsertOper.Fields {
+							if ast.InsertStmt.Fields[j] == insert.InsertOper.Fields[k] {
+								insert.InsertOper.Values = append(insert.InsertOper.Values, ast.InsertStmt.Values[k])
+							}
+						}
+					}
+
+					insert.Site = sitemap[table.Frags[i].SiteName]
+					if i == 0 {
+						tree.Root = &insert
+					} else {
+						tree.Root.Childs = append(tree.Root.Childs, &insert)
+					}
+				}
+			} else {
+				insert := plan.Operator_{}
+				insert.OperType = plan.Insert
+				insert.InsertOper = &plan.InsertOper_{}
+				insert.InsertOper.TableName = table.Name
+
+				insert.InsertOper.Fields = append(insert.InsertOper.Fields, ast.InsertStmt.Fields...)
+				insert.InsertOper.Values = append(insert.InsertOper.Values, ast.InsertStmt.Values...)
+
+				switch table.Name {
+				case "Publisher":
+					{
+						Value0 := 0
+						Value1 := "PRC"
+						for i := range ast.InsertStmt.Fields {
+							if ast.InsertStmt.Fields[i] == "nation" {
+								Value1 = string(ast.InsertStmt.Values[i])
+							}
+							if ast.InsertStmt.Fields[i] == "id" {
+								Value0, _ = strconv.Atoi(string(ast.InsertStmt.Values[i]))
+							}
+						}
+						switch Value1 {
+						case "PRC":
+							{
+								if Value0 < 10400 {
+									insert.Site = sitemap["s1"]
+								} else if Value0 >= 10400 {
+									insert.Site = sitemap["s3"]
+								}
+							}
+						case "USA":
+							{
+								if Value0 < 10400 {
+									insert.Site = sitemap["s2"]
+								} else if Value0 >= 10400 {
+									insert.Site = sitemap["s4"]
+								}
+
+							}
+						}
+					}
+				case "Book":
+					{
+						Value0, _ := strconv.Atoi(string(ast.InsertStmt.Values[0]))
+						if Value0 < 205000 {
+							insert.Site = sitemap["s1"]
+						} else if Value0 >= 205000 && Value0 < 210000 {
+							insert.Site = sitemap["s2"]
+						} else if Value0 >= 210000 {
+							insert.Site = sitemap["s3"]
+						}
+					}
+				case "Orders":
+					{
+
+					}
+				}
+				tree.Root = &insert
+			}
+			return tree
 		}
 	case parser.Delete:
 		{
+			client := meta.Connect()
+			data := meta.ReadLogi(client, meta.DefaultDbName, ast.DeleteStmt.TableName, meta.TableMetaType)
+			var table meta.TableMeta_
+			json.Unmarshal(data, &table)
+			client.Close()
+
+			for i := range table.Frags {
+				dataNum, _ := executor.RemoteGetDataNum(sitemap[table.Frags[i].SiteName], table.Name)
+				if dataNum != 0 {
+					del := plan.Operator_{}
+					del.OperType = plan.Delete
+					del.DeleteOper = &plan.DeleteOper_{}
+					del.DeleteOper.TableName = table.Name
+					del.Site = sitemap[table.Frags[i].SiteName]
+					if i == 0 {
+						tree.Root = &del
+					} else {
+						tree.Root.Childs = append(tree.Root.Childs, &del)
+					}
+				}
+			}
+			return tree
 
 		}
 	default:

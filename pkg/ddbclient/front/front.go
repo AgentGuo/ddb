@@ -111,5 +111,8 @@ func frontfunc(input string) {
 		// } else {
 		// 	fmt.Println(result)
 		// }
+	} else {
+		ppt := plangenerator.Plangenerate(ast)
+		ShowTree(&ppt)
 	}
 }
